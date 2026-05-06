@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bomb Attendance Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -16,7 +17,7 @@
   body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;min-height:100vh}
   h1{font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase}
   h2{font-size:17px;font-weight:600;color:var(--gold2);letter-spacing:1px}
-  .app{max-width:920px;margin:0 auto;padding:16px}
+  .app{max-width:960px;margin:0 auto;padding:16px}
   .header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;border-bottom:1px solid var(--border)}
   .header-left{display:flex;align-items:center;gap:16px}
   .logo{width:44px;height:44px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -24,6 +25,7 @@
   .user-badge{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 14px}
   .ub-name{font-family:var(--mono);font-size:12px;color:var(--gold2)}
   .ub-role{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+  /* LOGIN */
   .login-wrap{display:flex;align-items:center;justify-content:center;min-height:78vh}
   .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:32px;width:340px}
   .lf{margin-bottom:14px}
@@ -31,11 +33,13 @@
   .lf select,.lf input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px}
   .lf select:focus,.lf input:focus{outline:none;border-color:var(--gold)}
   .err{font-size:12px;color:var(--red);margin:6px 0;display:none}
+  /* NAV */
   .nav{display:flex;gap:4px;margin:16px 0;border-bottom:1px solid var(--border)}
   .nav-btn{padding:8px 18px;background:none;border:none;color:var(--text2);font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.5px;transition:all .15s}
   .nav-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
   .nav-btn:hover:not(.active){color:var(--text)}
   .page{display:none}.page.active{display:block}
+  /* CTA */
   .cta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;margin:16px 0}
   .cta-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .15s;position:relative}
   .cta-card:hover{border-color:var(--gold);background:var(--bg3)}
@@ -43,6 +47,7 @@
   .cta-time{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--gold2)}
   .cta-lbl{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:.5px}
   .cta-cnt{position:absolute;top:10px;right:12px;font-size:11px;font-family:var(--mono);color:var(--text2)}
+  /* FORMS */
   .dr{display:flex;align-items:center;gap:12px;margin:8px 0}
   .dr label{font-size:13px;color:var(--text2);min-width:60px}
   .dr input,.dr select,.fi input,.fi select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:13px}
@@ -50,6 +55,7 @@
   .fi{margin-bottom:12px}
   .fi label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
   .fi input,.fi select{width:100%;max-width:320px}
+  /* PLAYERS */
   .player-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:16px 0}
   .player-row{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;transition:border-color .1s}
   .player-row.present{border-color:var(--green)}
@@ -61,37 +67,54 @@
   .bp.on{background:var(--green);border-color:var(--green);color:#fff}
   .ba.on{background:var(--red);border-color:var(--red);color:#fff}
   .bp:disabled{opacity:.25;cursor:not-allowed}
+  /* SECTIONS */
   .sec{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0}
   .sec-title{font-size:11px;color:var(--text2);margin-bottom:12px;letter-spacing:.5px;text-transform:uppercase;font-weight:500}
+  /* UPLOAD */
   .upl{border:1px dashed var(--border);border-radius:6px;padding:20px;text-align:center;cursor:pointer;position:relative;background:var(--bg3);transition:border-color .15s}
   .upl:hover{border-color:var(--gold)}
   .upl input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
   .upl p{font-size:12px;color:var(--text2)}
   .upl-prev{max-width:100%;max-height:120px;border-radius:4px;margin-top:8px;display:none}
+  /* BUTTONS */
   .btn{padding:8px 20px;border-radius:6px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:all .15s;border:none}
   .btn-gold{background:var(--gold);color:#0a0c10}.btn-gold:hover{background:var(--gold2)}.btn-gold:disabled{opacity:.5;cursor:not-allowed}
   .btn-ol{background:none;border:1px solid var(--border);color:var(--text);padding:7px 16px}
   .btn-ol:hover{border-color:var(--gold);color:var(--gold)}
   .btn-del{background:var(--red);color:#fff;padding:4px 10px;font-size:12px;border-radius:4px;border:none;cursor:pointer}
   .btn-sm{padding:5px 12px;font-size:12px}
+  /* STATS */
   .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
   .scard{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
   .snum{font-size:26px;font-weight:700;font-family:var(--mono);color:var(--gold2)}
   .slbl{font-size:11px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+  /* CHARTS */
+  .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:12px 0}
+  .chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px}
+  .chart-box canvas{max-height:260px}
+  .chart-title{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;font-weight:500}
+  /* PLAYER PIZZA TABLE */
+  .player-select-wrap{margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  .player-select-wrap label{font-size:12px;color:var(--text2)}
+  .player-select-wrap select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-family:var(--mono);font-size:12px}
+  /* TABLE */
   .tw{overflow-x:auto;margin:10px 0}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th{text-align:left;padding:8px 12px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);font-weight:500}
   td{padding:8px 12px;border-bottom:1px solid var(--border)}
   tr:hover td{background:var(--bg3)}
+  /* BADGES */
   .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-family:var(--mono)}
   .bg{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3)}
   .br{background:rgba(224,58,58,.15);color:var(--red);border:1px solid rgba(224,58,58,.3)}
   .ba2{background:rgba(201,162,39,.15);color:var(--gold2);border:1px solid rgba(201,162,39,.3)}
+  /* KILLS GRID */
   .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:8px;margin:10px 0}
   .kcard{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center}
   .knum{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--gold2)}
   .kname{font-size:10px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
   .kcard.has{border-color:var(--gold)}
+  /* REGEAR */
   .rg-item{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin:8px 0;display:flex;gap:12px;align-items:flex-start}
   .rg-info{flex:1}.rg-nick{font-family:var(--mono);font-size:13px;color:var(--gold2)}
   .rg-meta{font-size:12px;color:var(--text2);margin-top:4px}
@@ -100,6 +123,7 @@
   .st-p{background:rgba(201,162,39,.15);color:var(--gold2);border:1px solid rgba(201,162,39,.3)}
   .st-a{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3)}
   .st-d{background:rgba(224,58,58,.15);color:var(--red);border:1px solid rgba(224,58,58,.3)}
+  /* ALERTS */
   .alert{padding:10px 14px;border-radius:6px;font-size:13px;margin:8px 0}
   .alert-s{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);color:var(--green);display:none}
   .alert-i{background:rgba(59,139,235,.1);border:1px solid rgba(59,139,235,.3);color:var(--blue)}
@@ -119,6 +143,7 @@
 <body>
 <div class="app">
 
+<!-- LOGIN -->
 <div id="login-screen">
   <div style="display:flex;align-items:center;gap:16px;padding:20px 0 28px;border-bottom:1px solid var(--border);margin-bottom:36px">
     <div class="logo">
@@ -142,15 +167,20 @@
         <label>Tipo de acesso</label>
         <select id="login-type" onchange="toggleLoginType()">
           <option value="player">Player</option>
-          <option value="admin">Admin / Officer</option>
+          <option value="officer">Officer</option>
+          <option value="admin">Admin</option>
         </select>
       </div>
-      <div class="lf" id="field-nick">
+      <div class="lf" id="field-nick-player">
         <label>Seu nick</label>
         <select id="login-nick"></select>
       </div>
+      <div class="lf" id="field-nick-officer" style="display:none">
+        <label>Seu nick</label>
+        <input type="text" id="login-officer-nick" placeholder="Ex: RAGNALDOKHUN">
+      </div>
       <div class="lf" id="field-pass" style="display:none">
-        <label>Senha admin</label>
+        <label>Senha</label>
         <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="err" id="login-err"></div>
@@ -159,6 +189,7 @@
   </div>
 </div>
 
+<!-- MAIN -->
 <div id="main-screen" style="display:none">
   <div class="header">
     <div class="header-left">
@@ -191,9 +222,7 @@
   <!-- ATTENDANCE -->
   <div id="page-attendance" class="page active">
     <h2>Registrar Presença</h2>
-    <div class="dr" style="margin-top:14px">
-      <label>Data</label><input type="date" id="att-date" onchange="onDateChange()">
-    </div>
+    <div class="dr" style="margin-top:14px"><label>Data</label><input type="date" id="att-date" onchange="onDateChange()"></div>
     <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 4px">Selecione a CTA</div>
     <div class="cta-grid">
       <div class="cta-card" onclick="selectCTA('15:30 UTC')" id="cta-1530"><div class="cta-time">15:30 UTC</div><div class="cta-lbl">CTA 1 · TARDE</div><div class="cta-cnt" id="cnt-1530">— presentes</div></div>
@@ -273,7 +302,7 @@
     <div class="sec" style="margin-top:20px"><div class="sec-title" id="rg-list-title">Meus pedidos</div><div id="regear-list"></div></div>
   </div>
 
-  <!-- STATS (admin) -->
+  <!-- STATS -->
   <div id="page-stats" class="page">
     <h2>Estatísticas</h2>
     <div class="flex aic gap8 mt12 wrap">
@@ -283,8 +312,27 @@
       <button class="btn btn-ol btn-sm" onclick="clearStFilter()">Limpar</button>
       <button class="btn btn-ol btn-sm" onclick="exportCSV()">Exportar CSV</button>
     </div>
+
     <div class="sgrid" id="stats-sum" style="margin-top:16px"></div>
-    <div class="sec mt12"><div class="sec-title">Attendance por player</div><div class="tw" id="stats-att"></div></div>
+
+    <!-- Gráficos pizza por player -->
+    <div class="sec">
+      <div class="sec-title">Estatísticas por player</div>
+      <div class="player-select-wrap">
+        <label>Player:</label>
+        <select id="pizza-player" onchange="renderPizzaCharts()"></select>
+      </div>
+      <div class="charts-grid" id="pizza-charts">
+        <div class="chart-box"><div class="chart-title">Attendance</div><canvas id="chart-att"></canvas></div>
+        <div class="chart-box"><div class="chart-title">Kills por CTA</div><canvas id="chart-kills"></canvas></div>
+        <div class="chart-box"><div class="chart-title">Re-gear</div><canvas id="chart-rg"></canvas></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">Attendance por player</div>
+      <div class="tw" id="stats-att"></div>
+    </div>
     <div class="sec"><div class="sec-title">Ranking de kills</div><div id="stats-kills"></div></div>
     <div class="sec"><div class="sec-title">Re-gear</div><div id="stats-rg"></div></div>
     <div style="margin-top:20px">
@@ -307,18 +355,44 @@
 
 <script>
 const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETE','GAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
-let session={role:null,nick:null,adminPass:null};
+let session={role:null,nick:null,adminPass:null,officerNick:null};
 let selectedCTA=null;
 let imgs=[null,null,null];
 let attData={};
+let statsCache=null;
+let chartAtt=null,chartKills=null,chartRg=null;
+
 const isAdmin=()=>session.role==='admin';
 const today=()=>new Date().toISOString().split('T')[0];
-function authHeaders(){const h={'Content-Type':'application/json'};if(isAdmin())h['x-admin-pass']=session.adminPass;else if(session.nick)h['x-player-nick']=session.nick;return h;}
-async function api(method,path,body){const opts={method,headers:authHeaders()};if(body)opts.body=JSON.stringify(body);const r=await fetch(path,opts);const data=await r.json();if(!r.ok)throw new Error(data.error||'Erro desconhecido');return data;}
-function toggleLoginType(){const t=document.getElementById('login-type').value;document.getElementById('field-nick').style.display=t==='player'?'block':'none';document.getElementById('field-pass').style.display=t==='admin'?'block':'none';}
+
+function authHeaders(){
+  const h={'Content-Type':'application/json'};
+  if(isAdmin()){
+    h['x-admin-pass']=session.adminPass;
+    if(session.officerNick)h['x-officer-nick']=session.officerNick;
+  } else if(session.nick) h['x-player-nick']=session.nick;
+  return h;
+}
+
+async function api(method,path,body){
+  const opts={method,headers:authHeaders()};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(path,opts);
+  const data=await r.json();
+  if(!r.ok)throw new Error(data.error||'Erro desconhecido');
+  return data;
+}
+
+function toggleLoginType(){
+  const t=document.getElementById('login-type').value;
+  document.getElementById('field-nick-player').style.display=t==='player'?'block':'none';
+  document.getElementById('field-nick-officer').style.display=t==='officer'?'block':'none';
+  document.getElementById('field-pass').style.display=t!=='player'?'block':'none';
+}
+
 async function doLogin(){
   const type=document.getElementById('login-type').value;
-  const nick=document.getElementById('login-nick').value;
+  const nick=type==='player'?document.getElementById('login-nick').value:document.getElementById('login-officer-nick').value.trim().toUpperCase();
   const password=document.getElementById('login-pass').value;
   const errEl=document.getElementById('login-err');
   const btn=document.getElementById('login-btn');
@@ -326,102 +400,336 @@ async function doLogin(){
   try{
     const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,nick,password})});
     const data=await res.json();if(!res.ok)throw new Error(data.error);
-    session={role:data.role,nick:data.nick,adminPass:password};initApp();
+    session={role:data.role,nick:data.nick,adminPass:password,officerNick:type==='officer'?data.nick:null};
+    initApp();
   }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
   finally{btn.innerHTML='Entrar';btn.disabled=false;}
 }
-function logout(){session={role:null,nick:null,adminPass:null};selectedCTA=null;attData={};imgs=[null,null,null];document.getElementById('login-pass').value='';document.getElementById('login-err').style.display='none';document.getElementById('main-screen').style.display='none';document.getElementById('login-screen').style.display='block';document.getElementById('att-section').style.display='none';document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));}
-function initApp(){
-  document.getElementById('login-screen').style.display='none';document.getElementById('main-screen').style.display='block';
-  document.getElementById('badge-name').textContent=session.nick;document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
-  document.getElementById('stats-tab').style.display=isAdmin()?'':'none';document.getElementById('mark-all-btns').style.display=isAdmin()?'flex':'none';
-  document.getElementById('pinfo').style.display=isAdmin()?'none':'block';document.getElementById('kill-player-fi').style.display=isAdmin()?'block':'none';
-  document.getElementById('rg-player-fi').style.display=isAdmin()?'block':'none';document.getElementById('rg-list-title').textContent=isAdmin()?'Todos os pedidos':'Meus pedidos';
-  if(isAdmin()){['kill-player','rg-player'].forEach(id=>{document.getElementById(id).innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');});}
-  const t=today();['att-date','kill-date','rg-date','st-from','st-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
-  loadAttendanceCounts();loadKillsTable();loadRegearList();if(isAdmin())loadStats();
+
+function logout(){
+  session={role:null,nick:null,adminPass:null,officerNick:null};
+  selectedCTA=null;attData={};imgs=[null,null,null];statsCache=null;
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-officer-nick').value='';
+  document.getElementById('login-err').style.display='none';
+  document.getElementById('main-screen').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+  document.getElementById('att-section').style.display='none';
+  document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
 }
+
+function initApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-screen').style.display='block';
+  document.getElementById('badge-name').textContent=session.nick;
+  document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
+  document.getElementById('stats-tab').style.display=isAdmin()?'':'none';
+  document.getElementById('mark-all-btns').style.display=isAdmin()?'flex':'none';
+  document.getElementById('pinfo').style.display=isAdmin()?'none':'block';
+  document.getElementById('kill-player-fi').style.display=isAdmin()?'block':'none';
+  document.getElementById('rg-player-fi').style.display=isAdmin()?'block':'none';
+  document.getElementById('rg-list-title').textContent=isAdmin()?'Todos os pedidos':'Meus pedidos';
+  if(isAdmin()){
+    ['kill-player','rg-player'].forEach(id=>{document.getElementById(id).innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');});
+    document.getElementById('pizza-player').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
+  }
+  const t=today();
+  ['att-date','kill-date','rg-date','st-from','st-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  loadAttendanceCounts();loadKillsTable();loadRegearList();
+  if(isAdmin())loadStats();
+}
+
+// ── Attendance ────────────────────────────────────────────────────────────────
 async function loadAttendanceCounts(){
   const date=document.getElementById('att-date').value;
   try{attData=await api('GET',`/api/attendance?date=${date}`);}catch(e){attData={};}
-  ['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'].forEach(cta=>{const key=cta.replace(':','').replace(' UTC','');const cnt=attData[cta]?attData[cta].present.length:0;document.getElementById('cnt-'+key).textContent=cnt+' presentes';});
+  ['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'].forEach(cta=>{
+    const key=cta.replace(':','').replace(' UTC','');
+    const cnt=attData[cta]?attData[cta].present.length:0;
+    document.getElementById('cnt-'+key).textContent=cnt+' presentes';
+  });
   if(selectedCTA)renderPlayerList();
 }
+
 function onDateChange(){loadAttendanceCounts();}
-function selectCTA(cta){selectedCTA=cta;document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));const key=cta.replace(':','').replace(' UTC','');document.getElementById('cta-'+key).classList.add('selected');document.getElementById('att-section').style.display='block';document.getElementById('att-cta-lbl').textContent=cta;renderPlayerList();}
+
+function selectCTA(cta){
+  selectedCTA=cta;
+  document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('cta-'+cta.replace(':','').replace(' UTC','')).classList.add('selected');
+  document.getElementById('att-section').style.display='block';
+  document.getElementById('att-cta-lbl').textContent=cta;
+  renderPlayerList();
+}
+
 function renderPlayerList(){
   const data=attData[selectedCTA]||{present:[],absent:[]};
-  const html=PLAYERS.map(p=>{const isP=data.present.includes(p);const isA=data.absent.includes(p);const isSelf=p===session.nick;const canToggle=isAdmin()||isSelf;const selfCls=isSelf&&!isAdmin()?'self-row':'';const dis=canToggle?'':'disabled';
-    return`<div class="player-row ${isP?'present':isA?'absent':''} ${selfCls}" id="pr-${p}"><span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}</span><div class="tbtn"><button class="bp ${isP?'on':''}" onclick="${canToggle?`tgl('${p}',true)`:''}" ${dis}>✓</button><button class="bp ba ${isA?'on':''}" onclick="${canToggle?`tgl('${p}',false)`:''}" ${dis}>✗</button></div></div>`;
+  const html=PLAYERS.map(p=>{
+    const isP=data.present.includes(p);const isA=data.absent.includes(p);
+    const isSelf=p===session.nick;const canToggle=isAdmin()||isSelf;
+    const selfCls=isSelf&&!isAdmin()?'self-row':'';const dis=canToggle?'':'disabled';
+    return`<div class="player-row ${isP?'present':isA?'absent':''} ${selfCls}" id="pr-${p}">
+      <span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}</span>
+      <div class="tbtn">
+        <button class="bp ${isP?'on':''}" onclick="${canToggle?`tgl('${p}',true)`:''}" ${dis}>✓</button>
+        <button class="bp ba ${isA?'on':''}" onclick="${canToggle?`tgl('${p}',false)`:''}" ${dis}>✗</button>
+      </div></div>`;
   }).join('');
   document.getElementById('player-list').innerHTML=html;
 }
-function tgl(name,present){const row=document.getElementById('pr-'+name);const btns=row.querySelectorAll('.bp');const isSelf=name===session.nick&&!isAdmin();row.className=`player-row ${present?'present':'absent'}${isSelf?' self-row':''}`;btns[0].className='bp'+(present?' on':'');btns[1].className='bp ba'+(present?'':' on');}
+
+function tgl(name,present){
+  const row=document.getElementById('pr-'+name);const btns=row.querySelectorAll('.bp');
+  const isSelf=name===session.nick&&!isAdmin();
+  row.className=`player-row ${present?'present':'absent'}${isSelf?' self-row':''}`;
+  btns[0].className='bp'+(present?' on':'');btns[1].className='bp ba'+(present?'':' on');
+}
 function markAll(present){if(!isAdmin())return;PLAYERS.forEach(p=>tgl(p,present));}
+
 async function saveAttendance(){
-  const date=document.getElementById('att-date').value;const btn=document.getElementById('att-save-btn');btn.disabled=true;btn.innerHTML='<span class="sp"></span>Salvando...';
-  try{const saves=[];PLAYERS.forEach(p=>{const row=document.getElementById('pr-'+p);if(!row)return;let status=null;if(row.classList.contains('present'))status='present';else if(row.classList.contains('absent'))status='absent';if(status&&(isAdmin()||p===session.nick))saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));});await Promise.all(saves);flash('att-ok');await loadAttendanceCounts();}
-  catch(e){flashErr('att-err',e.message);}finally{btn.disabled=false;btn.textContent='Salvar';}
+  const date=document.getElementById('att-date').value;
+  const btn=document.getElementById('att-save-btn');btn.disabled=true;btn.innerHTML='<span class="sp"></span>Salvando...';
+  try{
+    const saves=[];
+    PLAYERS.forEach(p=>{
+      const row=document.getElementById('pr-'+p);if(!row)return;
+      let status=null;
+      if(row.classList.contains('present'))status='present';
+      else if(row.classList.contains('absent'))status='absent';
+      if(status&&(isAdmin()||p===session.nick))saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));
+    });
+    await Promise.all(saves);flash('att-ok');await loadAttendanceCounts();
+  }catch(e){flashErr('att-err',e.message);}
+  finally{btn.disabled=false;btn.textContent='Salvar';}
 }
+
+// ── Kills ─────────────────────────────────────────────────────────────────────
 async function saveKill(){
-  const date=document.getElementById('kill-date').value;const cta=document.getElementById('kill-cta').value;const player=isAdmin()?document.getElementById('kill-player').value:session.nick;const kill_count=parseInt(document.getElementById('kill-count').value)||0;
-  try{await api('POST','/api/kills',{date,cta,player,kill_count,screenshot:imgs[1]});imgs[1]=null;document.getElementById('kill-count').value=0;document.getElementById('kill-prev').style.display='none';flash('kill-ok');loadKillsTable();}
-  catch(e){flashErr('kill-err',e.message);}
+  const date=document.getElementById('kill-date').value;
+  const cta=document.getElementById('kill-cta').value;
+  const player=isAdmin()?document.getElementById('kill-player').value:session.nick;
+  const kill_count=parseInt(document.getElementById('kill-count').value)||0;
+  try{
+    await api('POST','/api/kills',{date,cta,player,kill_count,screenshot:imgs[1]});
+    imgs[1]=null;document.getElementById('kill-count').value=0;document.getElementById('kill-prev').style.display='none';
+    flash('kill-ok');loadKillsTable();
+  }catch(e){flashErr('kill-err',e.message);}
 }
+
 async function loadKillsTable(){
-  try{const rows=await api('GET','/api/kills');if(!rows.length){document.getElementById('kills-table').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum kill registrado.</p>';return;}
-  let html='<table><thead><tr><th>Data</th><th>CTA</th><th>Player</th><th>Kills</th><th>Print</th><th></th></tr></thead><tbody>';
-  rows.slice(0,60).forEach(k=>{const canDel=isAdmin()||k.player===session.nick;html+=`<tr><td style="font-family:var(--mono);font-size:12px">${k.date}</td><td style="font-family:var(--mono);font-size:11px">${k.cta}</td><td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td><td><span class="badge ba2">${k.kill_count}</span></td><td>${k.screenshot?`<img src="${k.screenshot}" style="width:40px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer" onclick="viewImg('${k.screenshot}')">`:'-'}</td><td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td></tr>`;});
-  html+='</tbody></table>';document.getElementById('kills-table').innerHTML=html;}catch(e){}
+  try{
+    const rows=await api('GET','/api/kills');
+    if(!rows.length){document.getElementById('kills-table').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum kill registrado.</p>';return;}
+    let html='<table><thead><tr><th>Data</th><th>CTA</th><th>Player</th><th>Kills</th><th>Print</th><th></th></tr></thead><tbody>';
+    rows.slice(0,60).forEach(k=>{
+      const canDel=isAdmin()||k.player===session.nick;
+      // Format date properly
+      const d=k.date?k.date.split('T')[0]:'-';
+      html+=`<tr>
+        <td style="font-family:var(--mono);font-size:12px">${d}</td>
+        <td style="font-family:var(--mono);font-size:11px">${k.cta}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td>
+        <td><span class="badge ba2">${k.kill_count}</span></td>
+        <td>${k.screenshot?`<img src="${k.screenshot}" style="width:40px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer" onclick="viewImg('${k.screenshot}')">`:'-'}</td>
+        <td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td>
+      </tr>`;
+    });
+    html+='</tbody></table>';
+    document.getElementById('kills-table').innerHTML=html;
+  }catch(e){}
 }
 async function delKill(id){try{await api('DELETE',`/api/kills/${id}`);loadKillsTable();}catch(e){}}
+
+// ── Re-gear ───────────────────────────────────────────────────────────────────
 async function saveRegear(){
-  const date=document.getElementById('rg-date').value;const cta=document.getElementById('rg-cta').value;const player=isAdmin()?document.getElementById('rg-player').value:session.nick;const note=document.getElementById('rg-note').value;
+  const date=document.getElementById('rg-date').value;
+  const cta=document.getElementById('rg-cta').value;
+  const player=isAdmin()?document.getElementById('rg-player').value:session.nick;
+  const note=document.getElementById('rg-note').value;
   if(!imgs[2]){flashErr('rg-err','Anexe o print da morte!');return;}
-  try{await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2]});imgs[2]=null;document.getElementById('rg-note').value='';document.getElementById('rg-prev').style.display='none';flash('rg-ok');loadRegearList();}
-  catch(e){flashErr('rg-err',e.message);}
+  try{
+    await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2]});
+    imgs[2]=null;document.getElementById('rg-note').value='';document.getElementById('rg-prev').style.display='none';
+    flash('rg-ok');loadRegearList();
+  }catch(e){flashErr('rg-err',e.message);}
 }
+
 async function loadRegearList(){
-  try{const rows=await api('GET','/api/regear');if(!rows.length){document.getElementById('regear-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum pedido ainda.</p>';return;}
-  let html='';const next={pending:'approved',approved:'denied',denied:'pending'};
-  rows.forEach(r=>{const cls=r.status==='approved'?'st-a':r.status==='denied'?'st-d':'st-p';const lbl=r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
-    html+=`<div class="rg-item">${r.screenshot?`<img src="${r.screenshot}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:''}<div class="rg-info"><div class="rg-nick">${r.player}</div><div class="rg-meta">${r.date} · ${r.cta}${r.note?' · '+r.note:''}</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${isAdmin()?`<button class="stbadge clk ${cls}" onclick="setRgStatus(${r.id},'${next[r.status]}')">${lbl}</button><button class="btn-del" onclick="delRegear(${r.id})">Remover</button>`:`<span class="stbadge ${cls}">${lbl}</span>`}</div></div></div>`;});
-  document.getElementById('regear-list').innerHTML=html;}catch(e){}
+  try{
+    const rows=await api('GET','/api/regear');
+    if(!rows.length){document.getElementById('regear-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum pedido ainda.</p>';return;}
+    let html='';const next={pending:'approved',approved:'denied',denied:'pending'};
+    rows.forEach(r=>{
+      const cls=r.status==='approved'?'st-a':r.status==='denied'?'st-d':'st-p';
+      const lbl=r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
+      const d=r.date?r.date.split('T')[0]:'-';
+      html+=`<div class="rg-item">
+        ${r.screenshot?`<img src="${r.screenshot}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:``}
+        <div class="rg-info">
+          <div class="rg-nick">${r.player}</div>
+          <div class="rg-meta">${d} · ${r.cta}${r.note?' · '+r.note:''}</div>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+            ${isAdmin()?`<button class="stbadge clk ${cls}" onclick="setRgStatus(${r.id},'${next[r.status]}')">${lbl}</button>
+              <button class="btn-del" onclick="delRegear(${r.id})">Remover</button>`
+            :`<span class="stbadge ${cls}">${lbl}</span>`}
+          </div>
+        </div></div>`;
+    });
+    document.getElementById('regear-list').innerHTML=html;
+  }catch(e){}
 }
 async function setRgStatus(id,status){try{await api('PATCH',`/api/regear/${id}/status`,{status});loadRegearList();}catch(e){}}
 async function delRegear(id){try{await api('DELETE',`/api/regear/${id}`);loadRegearList();}catch(e){}}
+
+// ── Stats + Gráficos ──────────────────────────────────────────────────────────
+const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#e03a3a','#9b59b6','#1abc9c','#e67e22','#e91e63'];
+
 async function loadStats(){
-  if(!isAdmin())return;const from=document.getElementById('st-from').value;const to=document.getElementById('st-to').value;
-  try{const d=await api('GET',`/api/stats?from=${from}&to=${to}`);
-  const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total),0);const rgPending=(d.regear.find(r=>r.status==='pending')?.cnt)||0;
-  document.getElementById('stats-sum').innerHTML=`<div class="scard"><div class="snum">${d.totalCTAs}</div><div class="slbl">CTAs registradas</div></div><div class="scard"><div class="snum">${totalKills}</div><div class="slbl">Kills totais</div></div><div class="scard"><div class="snum">${rgPending}</div><div class="slbl">Re-gears pendentes</div></div>`;
-  const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt);});
-  const sorted=[...PLAYERS].sort((a,b)=>pMap[b].present-pMap[a].present);
-  let tHtml='<table><thead><tr><th>#</th><th>Player</th><th>Presentes</th><th>Ausentes</th><th>% Presença</th></tr></thead><tbody>';
-  sorted.forEach((p,i)=>{const s=pMap[p];const total=s.present+s.absent;const pct=total>0?Math.round(s.present/total*100):0;const cls=pct>=70?'bg':pct>=40?'ba2':'br';tHtml+=`<tr><td style="color:var(--text2);font-size:12px">${i+1}</td><td style="font-family:var(--mono);font-size:12px">${p}</td><td><span class="badge bg">${s.present}</span></td><td><span class="badge br">${s.absent}</span></td><td><span class="badge ${cls}">${pct}%</span></td></tr>`;});tHtml+='</tbody></table>';document.getElementById('stats-att').innerHTML=tHtml;
-  const kMap={};PLAYERS.forEach(p=>{kMap[p]=0;});d.kills.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total);});
-  const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);let kHtml='<div class="kgrid">';kSorted.forEach(p=>{const n=kMap[p];kHtml+=`<div class="kcard ${n>0?'has':''}"><div class="knum">${n}</div><div class="kname">${p}</div></div>`;});kHtml+='</div>';document.getElementById('stats-kills').innerHTML=kHtml;
-  const rgA=(d.regear.find(r=>r.status==='approved')?.cnt)||0;const rgD=(d.regear.find(r=>r.status==='denied')?.cnt)||0;document.getElementById('stats-rg').innerHTML=`<div class="flex gap8 wrap"><span class="badge ba2">Pendentes: ${rgPending}</span><span class="badge bg">Aprovados: ${rgA}</span><span class="badge br">Negados: ${rgD}</span></div>`;
+  if(!isAdmin())return;
+  const from=document.getElementById('st-from').value;
+  const to=document.getElementById('st-to').value;
+  try{
+    const d=await api('GET',`/api/stats?from=${from}&to=${to}`);
+    statsCache=d;
+
+    const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total),0);
+    const rgPending=(d.regear.find(r=>r.status==='pending')?.cnt)||0;
+    document.getElementById('stats-sum').innerHTML=`
+      <div class="scard"><div class="snum">${d.totalCTAs}</div><div class="slbl">CTAs registradas</div></div>
+      <div class="scard"><div class="snum">${totalKills}</div><div class="slbl">Kills totais</div></div>
+      <div class="scard"><div class="snum">${rgPending}</div><div class="slbl">Re-gears pendentes</div></div>`;
+
+    // Attendance table
+    const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});
+    d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt);});
+    const sorted=[...PLAYERS].sort((a,b)=>pMap[b].present-pMap[a].present);
+    let tHtml='<table><thead><tr><th>#</th><th>Player</th><th>Presentes</th><th>Ausentes</th><th>% Presença</th></tr></thead><tbody>';
+    sorted.forEach((p,i)=>{
+      const s=pMap[p];const total=s.present+s.absent;
+      const pct=total>0?Math.round(s.present/total*100):0;
+      const cls=pct>=70?'bg':pct>=40?'ba2':'br';
+      tHtml+=`<tr><td style="color:var(--text2);font-size:12px">${i+1}</td>
+        <td style="font-family:var(--mono);font-size:12px">${p}</td>
+        <td><span class="badge bg">${s.present}</span></td>
+        <td><span class="badge br">${s.absent}</span></td>
+        <td><span class="badge ${cls}">${pct}%</span></td></tr>`;
+    });tHtml+='</tbody></table>';
+    document.getElementById('stats-att').innerHTML=tHtml;
+
+    // Kills ranking
+    const kMap={};PLAYERS.forEach(p=>{kMap[p]=0;});
+    d.kills.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total);});
+    const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);
+    let kHtml='<div class="kgrid">';
+    kSorted.forEach(p=>{const n=kMap[p];kHtml+=`<div class="kcard ${n>0?'has':''}"><div class="knum">${n}</div><div class="kname">${p}</div></div>`;});
+    kHtml+='</div>';document.getElementById('stats-kills').innerHTML=kHtml;
+
+    // Re-gear summary
+    const rgA=(d.regear.find(r=>r.status==='approved')?.cnt)||0;
+    const rgD=(d.regear.find(r=>r.status==='denied')?.cnt)||0;
+    document.getElementById('stats-rg').innerHTML=`<div class="flex gap8 wrap">
+      <span class="badge ba2">Pendentes: ${rgPending}</span>
+      <span class="badge bg">Aprovados: ${rgA}</span>
+      <span class="badge br">Negados: ${rgD}</span></div>`;
+
+    renderPizzaCharts();
   }catch(e){console.error(e);}
 }
-function clearStFilter(){document.getElementById('st-from').value=today();document.getElementById('st-to').value=today();loadStats();}
+
+function renderPizzaCharts(){
+  if(!statsCache)return;
+  const player=document.getElementById('pizza-player').value;
+  const d=statsCache;
+
+  // Attendance pizza
+  const attP=d.attendance.find(r=>r.player===player&&r.status==='present');
+  const attA=d.attendance.find(r=>r.player===player&&r.status==='absent');
+  const attPresent=parseInt(attP?.cnt||0);
+  const attAbsent=parseInt(attA?.cnt||0);
+  const attTotal=attPresent+attAbsent;
+
+  destroyChart('chartAtt');
+  chartAtt=new Chart(document.getElementById('chart-att'),{
+    type:'doughnut',
+    data:{
+      labels:['Presente','Ausente','Sem registro'],
+      datasets:[{data:[attPresent,attAbsent,Math.max(0,d.totalCTAs-attTotal)],backgroundColor:['#2ecc71','#e03a3a','#2a2e3a'],borderWidth:0}]
+    },
+    options:{plugins:{legend:{labels:{color:'#d4cfc5',font:{family:'Rajdhani',size:12}}}},cutout:'60%'}
+  });
+
+  // Kills pizza - total kills do player vs resto do guild
+  const myKills=parseInt(d.kills.find(k=>k.player===player)?.total||0);
+  const otherKills=d.kills.filter(k=>k.player!==player).reduce((s,k)=>s+parseInt(k.total),0);
+  destroyChart('chartKills');
+  chartKills=new Chart(document.getElementById('chart-kills'),{
+    type:'doughnut',
+    data:{
+      labels:[player,'Resto do guild'],
+      datasets:[{data:[myKills,otherKills||0],backgroundColor:['#c9a227','#2a2e3a'],borderWidth:0}]
+    },
+    options:{plugins:{legend:{labels:{color:'#d4cfc5',font:{family:'Rajdhani',size:12}}}},cutout:'60%'}
+  });
+
+  // Re-gear pizza
+  const myRg=d.regearByPlayer?.find(r=>r.player===player)?.cnt||0;
+  const rgApproved=d.regear.find(r=>r.status==='approved')?.cnt||0;
+  const rgDenied=d.regear.find(r=>r.status==='denied')?.cnt||0;
+  const rgPending=d.regear.find(r=>r.status==='pending')?.cnt||0;
+  destroyChart('chartRg');
+  chartRg=new Chart(document.getElementById('chart-rg'),{
+    type:'doughnut',
+    data:{
+      labels:['Aprovados','Negados','Pendentes'],
+      datasets:[{data:[parseInt(rgApproved),parseInt(rgDenied),parseInt(rgPending)],backgroundColor:['#2ecc71','#e03a3a','#c9a227'],borderWidth:0}]
+    },
+    options:{plugins:{legend:{labels:{color:'#d4cfc5',font:{family:'Rajdhani',size:12}}}},cutout:'60%'}
+  });
+}
+
+function destroyChart(name){
+  if(window[name]){window[name].destroy();window[name]=null;}
+}
+
+function clearStFilter(){
+  const t=today();
+  document.getElementById('st-from').value=t;
+  document.getElementById('st-to').value=t;
+  loadStats();
+}
+
 function exportCSV(){
-  const link=document.createElement('a');link.href='/api/export/csv';
-  const h=authHeaders();delete h['Content-Type'];
-  // Pass admin token via query param for CSV download
+  const link=document.createElement('a');
   link.href=`/api/export/csv?_admin=${encodeURIComponent(session.adminPass||'')}`;link.click();
 }
 async function clearAllData(){
-  try{await Promise.all([api('DELETE','/api/data/all')]);}catch(e){}
+  try{await api('DELETE','/api/data/all');}catch(e){}
   closeModal();loadStats();loadKillsTable();loadRegearList();loadAttendanceCounts();
 }
-function showPage(p,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');if(btn)btn.classList.add('active');if(p==='stats')loadStats();if(p==='kills')loadKillsTable();if(p==='regear')loadRegearList();}
-function handleImg(e,previewId,slot){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{imgs[slot]=ev.target.result;const img=document.getElementById(previewId);img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function showPage(p,btn){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(p==='stats')loadStats();
+  if(p==='kills')loadKillsTable();
+  if(p==='regear')loadRegearList();
+}
+function handleImg(e,previewId,slot){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{imgs[slot]=ev.target.result;const img=document.getElementById(previewId);img.src=ev.target.result;img.style.display='block';};
+  r.readAsDataURL(f);
+}
 function flash(id){const el=document.getElementById(id);el.style.display='block';setTimeout(()=>el.style.display='none',2200);}
 function flashErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
 function viewImg(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh">`);}
 function confirmClear(){document.getElementById('modal-confirm').classList.add('open');}
 function closeModal(){document.getElementById('modal-confirm').classList.remove('open');}
+
+// Init nick dropdown
 document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
 </script>
 </body>
