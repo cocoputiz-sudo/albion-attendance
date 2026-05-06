@@ -21,12 +21,27 @@ const PLAYERS = [
 ];
 
 const BUILDS = {
-  'Arqueiro':  ['Capacete','Peito','Bota','Arco Plangente'],
-  'Fire':      ['Capacete','Peito','Bota','Canção da Alvorada'],
-  'Caller':    ['Capacete','Peito','Bota','Bruxo','Lume Críptico'],
-  'Frost':     ['Capacete','Peito','Bota','Prisma'],
-  'Piercers':  ['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário'],
+  'Ranged': {
+    'Arqueiro':  ['Capacete','Peito','Bota','Arco Plangente'],
+    'Fire':      ['Capacete','Peito','Bota','Canção da Alvorada'],
+    'Caller':    ['Capacete','Peito','Bota','Bruxo','Lume Críptico'],
+    'Frost':     ['Capacete','Peito','Bota','Prisma'],
+    'Piercers':  ['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário'],
+    'Cravadas':  ['Capacete','Peito','Bota','Cravadas'],
+  },
+  'Melee': {
+    'Caller':       ['Capacete','Peito','Bota','Maça de 1 mão','Escudo'],
+    'Bracers':      ['Capacete','Peito','Bota','Battle Bracers'],
+    'Cravadas':     ['Capacete','Peito','Bota','Cravadas'],
+    'Frost':        ['Capacete','Peito','Bota','Prisma'],
+    'Quebra-reinos':['Capacete','Peito','Bota','Quebrareinos'],
+    'Piercer':      ['Capacete','Peito','Bota','Caça Espíritos'],
+    'Oculto':       ['Capacete','Peito','Bota','Oculto'],
+  }
 };
+function getBuildParts(genre, build) {
+  return (BUILDS[genre] && BUILDS[genre][build]) || [];
+}
 
 function hashPass(p) { return crypto.createHash('sha256').update(p + 'imortais_salt').digest('hex'); }
 
@@ -259,7 +274,7 @@ app.get('/api/regear', async (req, res) => {
   const { from, to } = req.query;
   try {
     let q = `SELECT id, date::text as date, cta, player, note, screenshot, status, paid,
-             overcharge, overcharge_build, overcharge_parts, death_role, created_at FROM regear WHERE 1=1`;
+             overcharge, overcharge_build, overcharge_genre, overcharge_parts, death_role, death_genre, created_at FROM regear WHERE 1=1`;
     const p = [];
     if (!priv && nick) { p.push(nick.toUpperCase()); q += ` AND player = $${p.length}`; }
     if (from) { p.push(from); q += ` AND date >= $${p.length}`; }
@@ -275,16 +290,16 @@ app.post('/api/regear', async (req, res) => {
   const priv = isPrivileged(req);
   const isPlayer = nick && PLAYERS.includes(nick.toUpperCase());
   if (!priv && !isPlayer) return res.status(403).json({ error: 'Não autorizado.' });
-  const { date, cta, player, note, screenshot, overcharge, overcharge_build, overcharge_parts, death_role } = req.body;
+  const { date, cta, player, note, screenshot, overcharge, overcharge_build, overcharge_genre, overcharge_parts, death_role, death_genre } = req.body;
   if (!date || !cta || !player || !screenshot) return res.status(400).json({ error: 'Print da morte obrigatório.' });
   if (!priv && player.toUpperCase() !== nick.toUpperCase()) return res.status(403).json({ error: 'Você só pode pedir re-gear para si mesmo.' });
   try {
     const result = await pool.query(
-      `INSERT INTO regear (date, cta, player, note, screenshot, overcharge, overcharge_build, overcharge_parts, death_role)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+      `INSERT INTO regear (date, cta, player, note, screenshot, overcharge, overcharge_build, overcharge_genre, overcharge_parts, death_role, death_genre)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
       [date, cta, player.toUpperCase(), note || null, screenshot,
-       overcharge || false, overcharge_build || null,
-       JSON.stringify(overcharge_parts || []), death_role || null]);
+       overcharge || false, overcharge_build || null, overcharge_genre || null,
+       JSON.stringify(overcharge_parts || []), death_role || null, death_genre || null]);
     res.json({ ok: true, id: result.rows[0].id });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao salvar pedido.' }); }
 });
@@ -298,8 +313,29 @@ app.patch('/api/regear/:id/status', requireAdmin, async (req, res) => {
 
 app.patch('/api/regear/:id/paid', requireAdmin, async (req, res) => {
   const { paid } = req.body;
-  try { await pool.query('UPDATE regear SET paid = $1 WHERE id = $2', [!!paid, req.params.id]); res.json({ ok: true }); }
-  catch (e) { res.status(500).json({ error: 'Erro ao atualizar pagamento.' }); }
+  try {
+    await pool.query('UPDATE regear SET paid = $1 WHERE id = $2', [!!paid, req.params.id]);
+    // Auto-notify player when marked as paid
+    if (paid) {
+      const rg = await pool.query('SELECT player, cta, date::text as date, death_role, overcharge_build FROM regear WHERE id = $1', [req.params.id]);
+      if (rg.rows.length) {
+        const r = rg.rows[0];
+        const item = r.death_role || r.overcharge_build || 'Re-gear';
+        const author = (req.headers['x-officer-nick'] || 'ADMIN').toUpperCase();
+        await pool.query(
+          `INSERT INTO news (title, body, author, target_nick, auto_type)
+           VALUES ($1, $2, $3, $4, 'regear_paid')`,
+          [
+            '✅ Seu re-gear está pronto!',
+            `Seu re-gear de **${item}** da CTA ${r.cta} (${r.date}) foi aprovado e está disponível para retirada. Procure o officer responsável.`,
+            author,
+            r.player
+          ]
+        );
+      }
+    }
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar pagamento.' }); }
 });
 
 app.delete('/api/regear/:id', requireAdmin, async (req, res) => {
@@ -317,17 +353,31 @@ app.get('/api/shopping', requireAdmin, async (req, res) => {
     if (to)   { p.push(to);   q += ` AND date <= $${p.length}`; }
     const result = await pool.query(q, p);
     const shopping = {};
-    Object.keys(BUILDS).forEach(b => { shopping[b] = {}; BUILDS[b].forEach(part => { shopping[b][part] = 0; }); });
     result.rows.forEach(r => {
-      if (r.death_role && shopping[r.death_role]) {
-        BUILDS[r.death_role].forEach(part => { shopping[r.death_role][part]++; });
+      // Death: full set — use genre+build key
+      if (r.death_role) {
+        const genre = r.death_genre || 'Ranged';
+        const key = `${genre}::${r.death_role}`;
+        const parts = getBuildParts(genre, r.death_role);
+        if (parts.length) {
+          if (!shopping[key]) shopping[key] = {};
+          parts.forEach(p => { shopping[key][p] = (shopping[key][p] || 0) + 1; });
+        }
       }
-      if (r.overcharge && r.overcharge_build && shopping[r.overcharge_build]) {
-        const parts = Array.isArray(r.overcharge_parts) ? r.overcharge_parts : JSON.parse(r.overcharge_parts || '[]');
-        parts.forEach(part => { if (shopping[r.overcharge_build][part] !== undefined) shopping[r.overcharge_build][part]++; });
+      // Overcharge: individual parts
+      if (r.overcharge && r.overcharge_build) {
+        const genre = r.overcharge_genre || 'Ranged';
+        const key = `${genre}::${r.overcharge_build}`;
+        const validParts = getBuildParts(genre, r.overcharge_build);
+        if (validParts.length) {
+          if (!shopping[key]) shopping[key] = {};
+          const parts = Array.isArray(r.overcharge_parts) ? r.overcharge_parts : JSON.parse(r.overcharge_parts || '[]');
+          parts.forEach(p => { if (validParts.includes(p)) shopping[key][p] = (shopping[key][p] || 0) + 1; });
+        }
       }
     });
-    Object.keys(shopping).forEach(b => { if (Object.values(shopping[b]).every(v => v === 0)) delete shopping[b]; });
+    // Remove empty keys
+    Object.keys(shopping).forEach(k => { if (Object.values(shopping[k]).every(v => v === 0)) delete shopping[k]; });
     res.json(shopping);
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao calcular compras.' }); }
 });

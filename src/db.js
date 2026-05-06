@@ -51,7 +51,9 @@ async function initDB() {
         overcharge BOOLEAN DEFAULT FALSE,
         overcharge_build VARCHAR(50),
         overcharge_parts JSONB DEFAULT '[]',
+        overcharge_genre VARCHAR(20),
         death_role VARCHAR(50),
+        death_genre VARCHAR(20),
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
@@ -71,13 +73,54 @@ async function initDB() {
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE;
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge BOOLEAN DEFAULT FALSE;
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_build VARCHAR(50);
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_genre VARCHAR(20);
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_parts JSONB DEFAULT '[]';
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_role VARCHAR(50);
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_genre VARCHAR(20);
       ALTER TABLE members ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);
       ALTER TABLE kills ADD COLUMN IF NOT EXISTS screenshots JSONB DEFAULT '[]';
     `);
 
-    console.log('[DB] Tabelas criadas/verificadas com sucesso.');
+
+      CREATE TABLE IF NOT EXISTS news (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        body TEXT,
+        image TEXT,
+        author VARCHAR(50) NOT NULL,
+        target_nick VARCHAR(50),
+        auto_type VARCHAR(50),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS news_read (
+        id SERIAL PRIMARY KEY,
+        news_id INTEGER NOT NULL REFERENCES news(id) ON DELETE CASCADE,
+        nick VARCHAR(50) NOT NULL,
+        read_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(news_id, nick)
+      );
+
+      CREATE TABLE IF NOT EXISTS builds (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        genre VARCHAR(20) NOT NULL,
+        image TEXT,
+        parts TEXT,
+        author VARCHAR(50) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS videos (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        description TEXT,
+        youtube_url VARCHAR(500) NOT NULL,
+        author VARCHAR(50) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+        console.log('[DB] Tabelas criadas/verificadas com sucesso.');
   } finally {
     client.release();
   }

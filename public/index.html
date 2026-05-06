@@ -158,6 +158,31 @@
   .alert-i{background:rgba(59,139,235,.1);border:1px solid rgba(59,139,235,.3);color:var(--blue)}
   .alert-e{background:rgba(224,58,58,.1);border:1px solid rgba(224,58,58,.3);color:var(--red);display:none}
   .pinfo{background:rgba(59,139,235,.08);border:1px solid rgba(59,139,235,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--blue);margin:12px 0;display:none}
+
+  /* FEED */
+  .news-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:10px 0;position:relative}
+  .news-card.unread{border-left:3px solid var(--gold)}
+  .news-card.personal{border-left:3px solid var(--green);background:rgba(46,204,113,.04)}
+  .news-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .news-body{font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap}
+  .news-meta{font-size:11px;color:var(--text2);margin-top:8px;font-family:var(--mono)}
+  .news-img{max-width:100%;border-radius:6px;margin:8px 0;max-height:200px;object-fit:cover}
+  /* BUILDS */
+  .build-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .build-card-img{width:100%;height:180px;object-fit:contain;background:var(--bg3);border-bottom:1px solid var(--border)}
+  .build-card-body{padding:12px 14px}
+  .build-card-name{font-size:15px;font-weight:600;color:var(--gold2);margin-bottom:4px}
+  .build-card-genre{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+  .build-parts{list-style:none;padding:0}
+  .build-parts li{font-size:12px;font-family:var(--mono);color:var(--text);padding:3px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+  /* VIDEOS */
+  .video-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+  .video-card:hover{border-color:var(--gold)}
+  .video-thumb{width:100%;height:160px;object-fit:cover;background:var(--bg3);position:relative;display:block}
+  .video-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;background:rgba(201,162,39,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .video-card-body{padding:12px 14px}
+  .video-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .video-desc{font-size:12px;color:var(--text2);line-height:1.5}
   .sp{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:5px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .flex{display:flex}.gap8{gap:8px}.gap12{gap:12px}.mt12{margin-top:12px}
@@ -226,9 +251,15 @@
   </div>
 
   <div class="nav">
+    <button class="nav-btn" onclick="showPage('feed',this)" id="nav-feed">
+      Feed
+      <span id="feed-badge" style="display:none;background:var(--red);color:#fff;font-size:9px;border-radius:8px;padding:1px 5px;margin-left:4px;font-family:var(--mono);vertical-align:middle"></span>
+    </button>
     <button class="nav-btn active" onclick="showPage('attendance',this)">Attendance</button>
     <button class="nav-btn" onclick="showPage('kills',this)">Kills</button>
     <button class="nav-btn" onclick="showPage('regear',this)">Re-Gear</button>
+    <button class="nav-btn" onclick="showPage('builds',this)">Builds</button>
+    <button class="nav-btn" onclick="showPage('videos',this)">Vídeo-aulas</button>
     <button class="nav-btn" id="stats-tab" style="display:none" onclick="showPage('stats',this)">Estatísticas</button>
     <button class="nav-btn" id="shopping-tab" style="display:none" onclick="showPage('shopping',this)">Compras</button>
     <button class="nav-btn" id="members-tab" style="display:none" onclick="showPage('members',this)">Membros</button>
@@ -483,7 +514,105 @@
   <div class="footer-credits">Idealizado por <span>BadMack</span> · Desenvolvido com <span>Claude (Anthropic)</span></div>
   <div class="footer-version">v1.0.0 · RELEASE 06.05.2026</div>
 </div>
+
+  <!-- FEED -->
+  <div id="page-feed" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:4px">
+      <h2>Feed</h2>
+      <div class="flex gap8 admin-only2" id="feed-admin-bar" style="display:none">
+        <button class="btn btn-gold btn-sm" onclick="openNewsModal()">+ Nova notícia</button>
+      </div>
+    </div>
+    <div id="feed-list">
+      <div style="color:var(--text2);font-size:13px;text-align:center;padding:40px">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- BUILDS -->
+  <div id="page-builds" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:4px">
+      <h2>Builds do Bomb</h2>
+      <button class="btn btn-gold btn-sm admin-only2" id="add-build-btn" style="display:none" onclick="openBuildModal()">+ Adicionar build</button>
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border)">
+      <button class="nav-btn active" id="tab-ranged" onclick="filterBuilds('Ranged',this)" style="font-size:13px">Ranged</button>
+      <button class="nav-btn" id="tab-melee" onclick="filterBuilds('Melee',this)" style="font-size:13px">Melee</button>
+    </div>
+    <div id="builds-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+  </div>
+
+  <!-- VIDEOS -->
+  <div id="page-videos" class="page">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:4px">
+      <h2>Vídeo-aulas</h2>
+      <button class="btn btn-gold btn-sm admin-only2" id="add-video-btn" style="display:none" onclick="openVideoModal()">+ Adicionar vídeo</button>
+    </div>
+    <div id="videos-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+  </div>
+
 </div><!-- /main -->
+
+
+<div class="modal-ov" id="modal-news">
+  <div class="modal" style="max-width:520px">
+    <button class="xbtn" onclick="closeNewsModal()">×</button>
+    <h2>Nova Notícia</h2>
+    <div class="fi" style="margin-top:14px"><label>Título</label><input type="text" id="news-title" placeholder="Título da notícia" style="max-width:100%"></div>
+    <div class="fi"><label>Conteúdo</label><textarea id="news-body" style="min-height:80px;max-width:100%" placeholder="Texto da notícia..."></textarea></div>
+    <div class="fi">
+      <label>Imagem (opcional)</label>
+      <div class="upl" style="padding:12px"><input type="file" accept="image/*" onchange="handleNewsImg(event)"><p>Clique para anexar imagem</p><img id="news-img-prev" class="upl-prev"></div>
+    </div>
+    <div class="fi">
+      <label>Destinatário (deixe vazio para todos)</label>
+      <select id="news-target" style="max-width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px">
+        <option value="">Todos os membros</option>
+      </select>
+    </div>
+    <div class="flex gap8 mt12">
+      <button class="btn btn-gold" onclick="saveNews()">Publicar</button>
+      <button class="btn btn-ol" onclick="closeNewsModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-build">
+  <div class="modal" style="max-width:520px">
+    <button class="xbtn" onclick="closeBuildModal()">×</button>
+    <h2>Adicionar Build</h2>
+    <div class="fi" style="margin-top:14px"><label>Nome da Build</label><input type="text" id="build-name" placeholder="Ex: Arqueiro T8" style="max-width:100%"></div>
+    <div class="fi">
+      <label>Gênero</label>
+      <select id="build-genre" style="max-width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px">
+        <option value="Ranged">Ranged</option>
+        <option value="Melee">Melee</option>
+      </select>
+    </div>
+    <div class="fi">
+      <label>Print da Build</label>
+      <div class="upl" style="padding:12px"><input type="file" accept="image/*" onchange="handleBuildImg(event)"><p>Clique para subir o print</p><img id="build-img-prev" class="upl-prev"></div>
+    </div>
+    <div class="fi"><label>Peças e Tiers (uma por linha)</label><textarea id="build-parts" style="min-height:120px;max-width:100%" placeholder="Capacete T8&#10;Peito T8&#10;Bota T8&#10;Arco Plangente T8&#10;..."></textarea></div>
+    <div class="flex gap8 mt12">
+      <button class="btn btn-gold" onclick="saveBuild()">Salvar Build</button>
+      <button class="btn btn-ol" onclick="closeBuildModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-video">
+  <div class="modal" style="max-width:520px">
+    <button class="xbtn" onclick="closeVideoModal()">×</button>
+    <h2>Adicionar Vídeo-aula</h2>
+    <div class="fi" style="margin-top:14px"><label>Título</label><input type="text" id="video-title" placeholder="Ex: Guia do Arqueiro T8" style="max-width:100%"></div>
+    <div class="fi"><label>Descrição (opcional)</label><textarea id="video-desc" style="min-height:60px;max-width:100%" placeholder="Breve descrição..."></textarea></div>
+    <div class="fi"><label>Link do YouTube</label><input type="text" id="video-url" placeholder="https://youtube.com/watch?v=..." style="max-width:100%"></div>
+    <div class="flex gap8 mt12">
+      <button class="btn btn-gold" onclick="saveVideo()">Salvar</button>
+      <button class="btn btn-ol" onclick="closeVideoModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-ov" id="modal-confirm">
   <div class="modal">
@@ -522,6 +651,196 @@
 </div>
 
 <script>
+// ── FEED ──────────────────────────────────────────────────────────────────────
+async function loadFeed(){
+  try{
+    const rows=await api('GET','/api/news');
+    const unread=rows.filter(n=>!n.is_read);
+    const badge=document.getElementById('feed-badge');
+    if(badge){
+      if(unread.length>0){badge.style.display='inline';badge.textContent=unread.length;}
+      else badge.style.display='none';
+    }
+    if(!rows.length){
+      document.getElementById('feed-list').innerHTML='<p style="color:var(--text2);font-size:13px;text-align:center;padding:40px">Nenhuma notícia ainda.</p>';
+      return;
+    }
+    let html='';
+    rows.forEach(n=>{
+      const isPersonal=!!n.target_nick;
+      const unreadCls=n.is_read?'':'unread';
+      const personalCls=isPersonal?'personal':'';
+      const date=new Date(n.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const bodyHtml=n.body?n.body.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold2)">$1</strong>'):'';
+      html+=`<div class="news-card ${unreadCls} ${personalCls}" id="news-${n.id}">
+        ${isPersonal?'<div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🔔 Notificação pessoal</div>':''}
+        <div class="news-title">${n.title}</div>
+        ${bodyHtml?`<div class="news-body">${bodyHtml}</div>`:''}
+        ${n.image?`<img src="${n.image}" class="news-img">`:''}
+        <div class="news-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>por ${n.author} · ${date}</span>
+          <div style="display:flex;gap:6px">
+            ${!n.is_read?`<button class="btn btn-ol btn-sm" onclick="markNewsRead(${n.id})">Marcar como lida</button>`:'<span style="color:var(--green);font-size:11px">✓ Lida</span>'}
+            ${isAdmin()?`<button class="btn-del" onclick="deleteNews(${n.id})">×</button>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+    document.getElementById('feed-list').innerHTML=html;
+  }catch(e){document.getElementById('feed-list').innerHTML='<p style="color:var(--red);font-size:13px">Erro ao carregar feed.</p>';}
+}
+
+async function markNewsRead(id){
+  try{
+    await api('POST',`/api/news/${id}/read`);
+    loadFeed();
+  }catch(e){}
+}
+
+async function deleteNews(id){
+  try{await api('DELETE',`/api/news/${id}`);loadFeed();}catch(e){}
+}
+
+function openNewsModal(){
+  newsImgData=null;
+  document.getElementById('news-title').value='';
+  document.getElementById('news-body').value='';
+  document.getElementById('news-img-prev').style.display='none';
+  document.getElementById('news-target').value='';
+  document.getElementById('modal-news').classList.add('open');
+}
+function closeNewsModal(){document.getElementById('modal-news').classList.remove('open');}
+function handleNewsImg(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{newsImgData=ev.target.result;const img=document.getElementById('news-img-prev');img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);
+}
+async function saveNews(){
+  const title=document.getElementById('news-title').value.trim();
+  const body=document.getElementById('news-body').value.trim();
+  const target=document.getElementById('news-target').value||null;
+  if(!title){alert('Título obrigatório');return;}
+  try{
+    await api('POST','/api/news',{title,body,image:newsImgData,target_nick:target});
+    closeNewsModal();loadFeed();
+  }catch(e){alert(e.message);}
+}
+
+// ── BUILDS ────────────────────────────────────────────────────────────────────
+async function loadBuilds(){
+  try{
+    const rows=await api('GET','/api/builds');
+    allBuildsCache=rows;
+    filterBuilds(currentBuildFilter,document.getElementById('tab-'+currentBuildFilter.toLowerCase()));
+  }catch(e){}
+}
+
+function filterBuilds(genre,btn){
+  currentBuildFilter=genre;
+  document.querySelectorAll('#page-builds .nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const filtered=allBuildsCache.filter(b=>b.genre===genre);
+  if(!filtered.length){
+    document.getElementById('builds-list').innerHTML=`<p style="color:var(--text2);font-size:13px;grid-column:1/-1">Nenhuma build ${genre} cadastrada ainda.</p>`;
+    return;
+  }
+  let html='';
+  filtered.forEach(b=>{
+    const parts=b.parts?b.parts.split('\n').filter(Boolean):[];
+    html+=`<div class="build-card">
+      ${b.image?`<img src="${b.image}" class="build-card-img" onclick="viewImg('${b.image}')" style="cursor:pointer" title="Clique para ampliar">`:'<div class="build-card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:12px">Sem imagem</div>'}
+      <div class="build-card-body">
+        <div class="build-card-name">${b.name}</div>
+        <div class="build-card-genre">${b.genre}</div>
+        ${parts.length?`<ul class="build-parts">${parts.map(p=>{const[item,...rest]=p.split(' ');const tier=rest.join(' ');return`<li><span>${item}</span><span style="color:var(--gold2)">${tier}</span></li>`;}).join('')}</ul>`:''}
+        ${isAdmin()?`<button class="btn-del" style="margin-top:10px" onclick="deleteBuild(${b.id})">Remover</button>`:''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('builds-list').innerHTML=html;
+}
+
+function openBuildModal(){
+  buildImgData=null;
+  document.getElementById('build-name').value='';
+  document.getElementById('build-parts').value='';
+  document.getElementById('build-img-prev').style.display='none';
+  document.getElementById('modal-build').classList.add('open');
+}
+function closeBuildModal(){document.getElementById('modal-build').classList.remove('open');}
+function handleBuildImg(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{buildImgData=ev.target.result;const img=document.getElementById('build-img-prev');img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);
+}
+async function saveBuild(){
+  const name=document.getElementById('build-name').value.trim();
+  const genre=document.getElementById('build-genre').value;
+  const parts=document.getElementById('build-parts').value.trim();
+  if(!name){alert('Nome obrigatório');return;}
+  try{
+    await api('POST','/api/builds',{name,genre,image:buildImgData,parts});
+    closeBuildModal();loadBuilds();
+  }catch(e){alert(e.message);}
+}
+async function deleteBuild(id){
+  try{await api('DELETE',`/api/builds/${id}`);loadBuilds();}catch(e){}
+}
+
+// ── VIDEOS ────────────────────────────────────────────────────────────────────
+function getYoutubeId(url){
+  const m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
+  return m?m[1]:null;
+}
+function getYoutubeThumbnail(url){
+  const id=getYoutubeId(url);
+  return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:null;
+}
+
+async function loadVideos(){
+  try{
+    const rows=await api('GET','/api/videos');
+    if(!rows.length){document.getElementById('videos-list').innerHTML='<p style="color:var(--text2);font-size:13px;grid-column:1/-1">Nenhum vídeo cadastrado ainda.</p>';return;}
+    let html='';
+    rows.forEach(v=>{
+      const thumb=getYoutubeThumbnail(v.youtube_url);
+      html+=`<div class="video-card" onclick="window.open('${v.youtube_url}','_blank')">
+        <div style="position:relative">
+          ${thumb?`<img src="${thumb}" class="video-thumb">`:'<div class="video-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text2)">▶</div>'}
+          <div class="video-play">▶</div>
+        </div>
+        <div class="video-card-body">
+          <div class="video-title">${v.title}</div>
+          ${v.description?`<div class="video-desc">${v.description}</div>`:''}
+          <div style="font-size:10px;color:var(--text2);margin-top:6px;font-family:var(--mono)">por ${v.author}</div>
+          ${isAdmin()?`<button class="btn-del" style="margin-top:8px" onclick="event.stopPropagation();deleteVideo(${v.id})">Remover</button>`:''}
+        </div>
+      </div>`;
+    });
+    document.getElementById('videos-list').innerHTML=html;
+  }catch(e){}
+}
+
+function openVideoModal(){
+  document.getElementById('video-title').value='';
+  document.getElementById('video-desc').value='';
+  document.getElementById('video-url').value='';
+  document.getElementById('modal-video').classList.add('open');
+}
+function closeVideoModal(){document.getElementById('modal-video').classList.remove('open');}
+async function saveVideo(){
+  const title=document.getElementById('video-title').value.trim();
+  const description=document.getElementById('video-desc').value.trim();
+  const youtube_url=document.getElementById('video-url').value.trim();
+  if(!title||!youtube_url){alert('Título e URL obrigatórios');return;}
+  try{
+    await api('POST','/api/videos',{title,description,youtube_url});
+    closeVideoModal();loadVideos();
+  }catch(e){alert(e.message);}
+}
+async function deleteVideo(id){
+  try{await api('DELETE',`/api/videos/${id}`);loadVideos();}catch(e){}
+}
+let newsImgData=null,buildImgData=null,currentBuildFilter='Ranged',allBuildsCache=[];
+
 // ── ATTENDANCE SCREENSHOTS (admin view) ───────────────────────────────────────
 async function loadAttendanceScreenshots(date, cta) {
   if(!isAdmin())return;
@@ -563,7 +882,38 @@ function startUTCClock(){
 }
 
 const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETE','GAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
-const BUILDS={'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],'Fire':['Capacete','Peito','Bota','Canção da Alvorada'],'Caller':['Capacete','Peito','Bota','Bruxo','Lume Críptico'],'Frost':['Capacete','Peito','Bota','Prisma'],'Piercers':['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário']};
+const BUILDS={
+  'Ranged':{
+    'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],
+    'Fire':['Capacete','Peito','Bota','Canção da Alvorada'],
+    'Caller':['Capacete','Peito','Bota','Bruxo','Lume Críptico'],
+    'Frost':['Capacete','Peito','Bota','Prisma'],
+    'Piercers':['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário'],
+    'Cravadas':['Capacete','Peito','Bota','Cravadas'],
+  },
+  'Melee':{
+    'Caller':['Capacete','Peito','Bota','Maça de 1 mão','Escudo'],
+    'Bracers':['Capacete','Peito','Bota','Battle Bracers'],
+    'Cravadas':['Capacete','Peito','Bota','Cravadas'],
+    'Frost':['Capacete','Peito','Bota','Prisma'],
+    'Quebra-reinos':['Capacete','Peito','Bota','Quebrareinos'],
+    'Piercer':['Capacete','Peito','Bota','Caça Espíritos'],
+    'Oculto':['Capacete','Peito','Bota','Oculto'],
+  }
+};
+// Flat lookup for shopping list
+function getBuildParts(genre, build){
+  return (BUILDS[genre]&&BUILDS[genre][build])||[];
+}
+function getAllBuilds(){
+  const out={};
+  Object.entries(BUILDS).forEach(([genre,subs])=>{
+    Object.entries(subs).forEach(([sub,parts])=>{
+      out[`${genre}::${sub}`]=parts;
+    });
+  });
+  return out;
+}
 const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
 
 let session={role:null,nick:null,adminPass:null,officerNick:null};
@@ -674,32 +1024,58 @@ function initApp(){
   loadAttendanceCounts();loadKillsTable();loadRegearList();
   if(isAdmin())loadStats();
   startUTCClock();
+  // Show admin controls for new sections
+  ['feed-admin-bar','add-build-btn','add-video-btn'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display=isAdmin()?'flex':'none';
+  });
+  // Populate news target dropdown
+  if(isAdmin()){
+    const sel=document.getElementById('news-target');
+    if(sel&&sel.options.length<=1){
+      PLAYERS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
+    }
+  }
+  // Load feed on start
+  loadFeed();
 }
 
 // ── BUILDS ────────────────────────────────────────────────────────────────────
 function buildBuildsGrids(){
-  const buildHTML=(onclick,activeClass)=>Object.keys(BUILDS).map(b=>
-    `<div class="build-btn" onclick="${onclick}('${b}')" id="${activeClass}-${b}">${b}</div>`).join('');
-  document.getElementById('death-builds-grid').innerHTML=buildHTML('selectDeathRole','death-build');
-  document.getElementById('builds-grid').innerHTML=buildHTML('selectBuild','build');
+  function genreHTML(onclickFn, prefix){
+    let html='';
+    Object.entries(BUILDS).forEach(([genre,subs])=>{
+      html+=`<div style="margin-bottom:12px">
+        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;padding-left:2px;border-left:2px solid var(--gold);padding-left:8px">${genre}</div>
+        <div class="builds-grid" style="margin-bottom:0">`;
+      Object.keys(subs).forEach(sub=>{
+        html+=`<div class="build-btn" onclick="${onclickFn}('${genre}','${sub}')" id="${prefix}-${genre}-${sub}">${sub}</div>`;
+      });
+      html+='</div></div>';
+    });
+    return html;
+  }
+  document.getElementById('death-builds-grid').innerHTML=genreHTML('selectDeathRole','death-build');
+  document.getElementById('builds-grid').innerHTML=genreHTML('selectBuild','build');
 }
-function selectDeathRole(build){
-  selectedDeathRole=build;
+function selectDeathRole(genre,build){
+  selectedDeathRole={genre,build};
   document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));
-  document.getElementById('death-build-'+build).classList.add('active-death');
+  const el=document.getElementById(`death-build-${genre}-${build}`);
+  if(el)el.classList.add('active-death');
 }
 function toggleDeath(){
   const checked=document.getElementById('death-check').checked;
   document.getElementById('death-section').classList.toggle('visible',checked);
   if(!checked){selectedDeathRole=null;document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));}
 }
-function selectBuild(build){
-  selectedBuild=build;
-  document.querySelectorAll('[id^="build-"]').forEach(b=>{if(b.id.startsWith('build-')&&!b.id.startsWith('build-btn'))b.classList.remove('active');});
+function selectBuild(genre,build){
+  selectedBuild={genre,build};
   document.querySelectorAll('.build-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('build-'+build).classList.add('active');
-  document.getElementById('parts-build-name').textContent=build;
-  document.getElementById('parts-grid').innerHTML=BUILDS[build].map(p=>
+  const el=document.getElementById(`build-${genre}-${build}`);
+  if(el)el.classList.add('active');
+  document.getElementById('parts-build-name').textContent=`${genre} · ${build}`;
+  const parts=(BUILDS[genre]&&BUILDS[genre][build])||[];
+  document.getElementById('parts-grid').innerHTML=parts.map(p=>
     `<label class="part-check" id="part-${p.replace(/\s/g,'_')}"><input type="checkbox" value="${p}" onchange="togglePartCheck(this)"> <span>${p}</span></label>`
   ).join('');
   document.getElementById('parts-section').style.display='block';
@@ -725,9 +1101,11 @@ function resetDeath(){
 }
 function getOverchargeData(){
   const checked=document.getElementById('oc-check').checked;
-  if(!checked)return{overcharge:false,overcharge_build:null,overcharge_parts:[]};
+  if(!checked)return{overcharge:false,overcharge_build:null,overcharge_genre:null,overcharge_parts:[]};
   const parts=[...document.querySelectorAll('.part-check input:checked')].map(cb=>cb.value);
-  return{overcharge:true,overcharge_build:selectedBuild,overcharge_parts:parts};
+  const build=selectedBuild?selectedBuild.build:null;
+  const genre=selectedBuild?selectedBuild.genre:null;
+  return{overcharge:true,overcharge_build:build,overcharge_genre:genre,overcharge_parts:parts};
 }
 
 // ── ATTENDANCE ────────────────────────────────────────────────────────────────
@@ -842,9 +1220,10 @@ async function saveRegear(){
   const note=document.getElementById('rg-note').value;
   if(!imgs[2]){flashErr('rg-err','Anexe o print da morte!');return;}
   const ocData=getOverchargeData();
-  const death_role=document.getElementById('death-check').checked?selectedDeathRole:null;
+  const death_role=document.getElementById('death-check').checked&&selectedDeathRole?selectedDeathRole.build:null;
+  const death_genre=document.getElementById('death-check').checked&&selectedDeathRole?selectedDeathRole.genre:null;
   try{
-    await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2],death_role,...ocData});
+    await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2],death_role,death_genre,...ocData});
     imgs[2]=null;document.getElementById('rg-note').value='';document.getElementById('rg-prev').style.display='none';
     resetOvercharge();resetDeath();flash('rg-ok');loadRegearList();
   }catch(e){flashErr('rg-err',e.message);}
@@ -861,10 +1240,11 @@ async function loadRegearList(){
       const lbl=r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
       const d=r.date?r.date.split('T')[0]:'-';
       let ocInfo='',deathInfo='';
-      if(r.death_role)deathInfo=`<div class="rg-death">☠ Morte — role: ${r.death_role} (set completo)</div>`;
+      if(r.death_role)deathInfo=`<div class="rg-death">☠ Morte — ${r.death_genre?r.death_genre+' · ':''}${r.death_role} (set completo)</div>`;
       if(r.overcharge&&r.overcharge_build){
         const parts=Array.isArray(r.overcharge_parts)?r.overcharge_parts:(JSON.parse(r.overcharge_parts||'[]'));
-        ocInfo=`<div class="rg-oc">⚡ OC ${r.overcharge_build}${parts.length?' · '+parts.join(', '):''}</div>`;
+        const genre=r.overcharge_genre?r.overcharge_genre+' · ':'';
+        ocInfo=`<div class="rg-oc">⚡ OC ${genre}${r.overcharge_build}${parts.length?' · '+parts.join(', '):''}</div>`;
       }
       const paidBadge=r.paid?'<span class="badge bg" style="font-size:10px">PAGO</span>':'';
       html+=`<div class="rg-item ${r.paid?'paid-item':''}">
@@ -1071,6 +1451,9 @@ function showPage(p,btn){
   if(p==='regear')loadRegearList();
   if(p==='members')loadMembers();
   if(p==='shopping')loadShopping();
+  if(p==='feed')loadFeed();
+  if(p==='builds')loadBuilds();
+  if(p==='videos')loadVideos();
 }
 function handleImg(e,previewId,slot){
   const f=e.target.files[0];if(!f)return;
