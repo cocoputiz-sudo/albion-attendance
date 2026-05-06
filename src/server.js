@@ -445,11 +445,14 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.ht
 app.get('/api/news', async (req, res) => {
   const nick = (req.headers['x-player-nick'] || req.headers['x-officer-nick'] || 'ADMIN').toUpperCase();
   try {
-    const result = await pool.query(`
-      SELECT n.*, EXISTS(SELECT 1 FROM news_read r WHERE r.news_id = n.id AND r.nick = $1) as is_read
-      FROM news n WHERE n.target_nick IS NULL OR n.target_nick = $1
-      ORDER BY n.created_at DESC LIMIT 50
-    `, [nick]);
+    const result = await pool.query(
+      `SELECT n.id, n.title, n.body, n.image, n.author, n.target_nick, n.auto_type, n.created_at,
+        EXISTS(SELECT 1 FROM news_read r WHERE r.news_id = n.id AND r.nick = $1) as is_read
+       FROM news n
+       WHERE n.target_nick IS NULL OR n.target_nick = $1
+       ORDER BY n.created_at DESC LIMIT 50`,
+      [nick]
+    );
     res.json(result.rows);
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao buscar notícias.' }); }
 });

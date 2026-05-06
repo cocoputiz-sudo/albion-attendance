@@ -671,6 +671,7 @@
 // ── FEED ──────────────────────────────────────────────────────────────────────
 async function loadFeed(){
   try{
+    if(!session.nick){document.getElementById('feed-list').innerHTML='<p style="color:var(--text2);font-size:13px;text-align:center;padding:40px">Faça login para ver o feed.</p>';return;}
     const rows=await api('GET','/api/news');
     const unread=rows.filter(n=>!n.is_read);
     const badge=document.getElementById('feed-badge');
@@ -704,7 +705,10 @@ async function loadFeed(){
       </div>`;
     });
     document.getElementById('feed-list').innerHTML=html;
-  }catch(e){document.getElementById('feed-list').innerHTML='<p style="color:var(--red);font-size:13px">Erro ao carregar feed.</p>';}
+  }catch(e){
+    console.error('Feed error:', e);
+    document.getElementById('feed-list').innerHTML=`<p style="color:var(--red);font-size:13px">Erro ao carregar feed: ${e.message}</p>`;
+  }
 }
 
 async function markNewsRead(id){
@@ -945,8 +949,11 @@ const inactiveNicks=()=>new Set(membersCache.filter(m=>!m.active).map(m=>m.nick)
 
 function authHeaders(){
   const h={'Content-Type':'application/json'};
-  if(isAdmin()){h['x-admin-pass']=session.adminPass;if(session.officerNick)h['x-officer-nick']=session.officerNick;}
-  else if(session.nick)h['x-player-nick']=session.nick;
+  if(session.adminPass){
+    h['x-admin-pass']=session.adminPass;
+    if(session.officerNick)h['x-officer-nick']=session.officerNick;
+  }
+  if(session.nick&&session.role==='player')h['x-player-nick']=session.nick;
   return h;
 }
 async function api(method,path,body){
@@ -1052,8 +1059,8 @@ function initApp(){
       PLAYERS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
     }
   }
-  // Load feed on start
-  loadFeed();
+  // Load feed after session is ready
+  setTimeout(loadFeed, 100);
 }
 
 // ── BUILDS ────────────────────────────────────────────────────────────────────
