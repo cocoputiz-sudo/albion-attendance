@@ -441,6 +441,77 @@ app.get('/api/export/csv', async (req, res) => {
 
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
+// ── News ──────────────────────────────────────────────────────────────────────
+app.get('/api/news', async (req, res) => {
+  const nick = (req.headers['x-player-nick'] || req.headers['x-officer-nick'] || 'ADMIN').toUpperCase();
+  try {
+    const result = await pool.query(`
+      SELECT n.*, EXISTS(SELECT 1 FROM news_read r WHERE r.news_id = n.id AND r.nick = $1) as is_read
+      FROM news n WHERE n.target_nick IS NULL OR n.target_nick = $1
+      ORDER BY n.created_at DESC LIMIT 50
+    `, [nick]);
+    res.json(result.rows);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao buscar notícias.' }); }
+});
+app.post('/api/news', requireAdmin, async (req, res) => {
+  const { title, body, image, target_nick } = req.body;
+  const author = (req.headers['x-officer-nick'] || 'ADMIN').toUpperCase();
+  if (!title) return res.status(400).json({ error: 'Título obrigatório.' });
+  try {
+    const result = await pool.query(
+      'INSERT INTO news (title, body, image, author, target_nick) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [title, body||null, image||null, author, target_nick||null]);
+    res.json(result.rows[0]);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao criar notícia.' }); }
+});
+app.post('/api/news/:id/read', async (req, res) => {
+  const nick = (req.headers['x-player-nick'] || req.headers['x-officer-nick'] || 'ADMIN').toUpperCase();
+  try { await pool.query('INSERT INTO news_read (news_id, nick) VALUES ($1,$2) ON CONFLICT DO NOTHING', [req.params.id, nick]); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+app.delete('/api/news/:id', requireAdmin, async (req, res) => {
+  try { await pool.query('DELETE FROM news WHERE id = $1', [req.params.id]); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
+// ── Builds ────────────────────────────────────────────────────────────────────
+app.get('/api/builds', async (req, res) => {
+  try { res.json((await pool.query('SELECT * FROM builds ORDER BY genre, name')).rows); }
+  catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+app.post('/api/builds', requireAdmin, async (req, res) => {
+  const { name, genre, image, parts } = req.body;
+  const author = (req.headers['x-officer-nick'] || 'ADMIN').toUpperCase();
+  if (!name || !genre) return res.status(400).json({ error: 'Nome e gênero obrigatórios.' });
+  try {
+    const r = await pool.query('INSERT INTO builds (name, genre, image, parts, author) VALUES ($1,$2,$3,$4,$5) RETURNING *', [name, genre, image||null, parts||null, author]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+app.delete('/api/builds/:id', requireAdmin, async (req, res) => {
+  try { await pool.query('DELETE FROM builds WHERE id = $1', [req.params.id]); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
+// ── Videos ────────────────────────────────────────────────────────────────────
+app.get('/api/videos', async (req, res) => {
+  try { res.json((await pool.query('SELECT * FROM videos ORDER BY created_at DESC')).rows); }
+  catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+app.post('/api/videos', requireAdmin, async (req, res) => {
+  const { title, description, youtube_url } = req.body;
+  const author = (req.headers['x-officer-nick'] || 'ADMIN').toUpperCase();
+  if (!title || !youtube_url) return res.status(400).json({ error: 'Título e URL obrigatórios.' });
+  try {
+    const r = await pool.query('INSERT INTO videos (title, description, youtube_url, author) VALUES ($1,$2,$3,$4) RETURNING *', [title, description||null, youtube_url, author]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+app.delete('/api/videos/:id', requireAdmin, async (req, res) => {
+  try { await pool.query('DELETE FROM videos WHERE id = $1', [req.params.id]); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
 initDB().then(() => {
   app.listen(PORT, () => console.log(`[Server] Rodando na porta ${PORT}`));
 }).catch(err => { console.error('[DB] Falha:', err); process.exit(1); });
