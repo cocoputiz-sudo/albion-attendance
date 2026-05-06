@@ -37,9 +37,33 @@ async function initDB() {
         note TEXT,
         screenshot TEXT NOT NULL,
         status VARCHAR(10) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'denied')),
+        paid BOOLEAN DEFAULT FALSE,
+        overcharge BOOLEAN DEFAULT FALSE,
+        overcharge_build VARCHAR(50),
+        overcharge_parts JSONB DEFAULT '[]',
+        death_role VARCHAR(50),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS members (
+        id SERIAL PRIMARY KEY,
+        nick VARCHAR(50) NOT NULL UNIQUE,
+        joined_at DATE NOT NULL,
+        left_at DATE,
+        active BOOLEAN DEFAULT TRUE,
+        notes TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+
+    await client.query(`
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE;
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge BOOLEAN DEFAULT FALSE;
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_build VARCHAR(50);
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_parts JSONB DEFAULT '[]';
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_role VARCHAR(50);
+    `);
+
     console.log('[DB] Tabelas criadas/verificadas com sucesso.');
   } finally {
     client.release();

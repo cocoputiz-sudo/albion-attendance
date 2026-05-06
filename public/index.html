@@ -8,12 +8,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{
-    --bg:#0a0c10;--bg2:#111318;--bg3:#181c24;
-    --gold:#c9a227;--gold2:#e8c04a;--red:#e03a3a;--green:#2ecc71;--blue:#3b8beb;
-    --text:#d4cfc5;--text2:#8a8578;--border:#2a2e3a;
-    --font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;
-  }
+  :root{--bg:#0a0c10;--bg2:#111318;--bg3:#181c24;--gold:#c9a227;--gold2:#e8c04a;--red:#e03a3a;--green:#2ecc71;--blue:#3b8beb;--text:#d4cfc5;--text2:#8a8578;--border:#2a2e3a;--font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace}
   body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;min-height:100vh}
   h1{font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase}
   h2{font-size:17px;font-weight:600;color:var(--gold2);letter-spacing:1px}
@@ -25,29 +20,24 @@
   .user-badge{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 14px}
   .ub-name{font-family:var(--mono);font-size:12px;color:var(--gold2)}
   .ub-role{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-  /* LOGIN */
   .login-wrap{display:flex;align-items:center;justify-content:center;min-height:78vh}
   .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:32px;width:340px}
   .lf{margin-bottom:14px}
   .lf label{display:block;font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
   .lf select,.lf input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px}
-  .lf select:focus,.lf input:focus{outline:none;border-color:var(--gold)}
   .err{font-size:12px;color:var(--red);margin:6px 0;display:none}
-  /* NAV */
-  .nav{display:flex;gap:4px;margin:16px 0;border-bottom:1px solid var(--border)}
-  .nav-btn{padding:8px 18px;background:none;border:none;color:var(--text2);font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.5px;transition:all .15s}
+  .nav{display:flex;gap:4px;margin:16px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .nav-btn{padding:8px 16px;background:none;border:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.5px;transition:all .15s}
   .nav-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
   .nav-btn:hover:not(.active){color:var(--text)}
   .page{display:none}.page.active{display:block}
-  /* CTA */
-  .cta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;margin:16px 0}
+  .cta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:16px 0}
   .cta-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .15s;position:relative}
   .cta-card:hover{border-color:var(--gold);background:var(--bg3)}
   .cta-card.selected{border-color:var(--gold);background:var(--bg3);box-shadow:0 0 0 1px var(--gold)}
-  .cta-time{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--gold2)}
-  .cta-lbl{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:.5px}
+  .cta-time{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--gold2)}
+  .cta-lbl{font-size:11px;color:var(--text2);margin-top:2px}
   .cta-cnt{position:absolute;top:10px;right:12px;font-size:11px;font-family:var(--mono);color:var(--text2)}
-  /* FORMS */
   .dr{display:flex;align-items:center;gap:12px;margin:8px 0}
   .dr label{font-size:13px;color:var(--text2);min-width:60px}
   .dr input,.dr select,.fi input,.fi select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:13px}
@@ -55,75 +45,103 @@
   .fi{margin-bottom:12px}
   .fi label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
   .fi input,.fi select{width:100%;max-width:320px}
-  /* PLAYERS */
   .player-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:16px 0}
   .player-row{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;transition:border-color .1s}
   .player-row.present{border-color:var(--green)}
   .player-row.absent{border-color:var(--red);opacity:.6}
   .player-row.self-row{border-color:var(--blue)}
+  .player-row.inactive-row{opacity:.35;text-decoration:line-through}
   .pname{font-family:var(--mono);font-size:13px}
   .tbtn{display:flex;gap:4px}
   .bp{background:none;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--text2);transition:all .1s}
   .bp.on{background:var(--green);border-color:var(--green);color:#fff}
   .ba.on{background:var(--red);border-color:var(--red);color:#fff}
   .bp:disabled{opacity:.25;cursor:not-allowed}
-  /* SECTIONS */
   .sec{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0}
   .sec-title{font-size:11px;color:var(--text2);margin-bottom:12px;letter-spacing:.5px;text-transform:uppercase;font-weight:500}
-  /* UPLOAD */
   .upl{border:1px dashed var(--border);border-radius:6px;padding:20px;text-align:center;cursor:pointer;position:relative;background:var(--bg3);transition:border-color .15s}
   .upl:hover{border-color:var(--gold)}
   .upl input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
   .upl p{font-size:12px;color:var(--text2)}
   .upl-prev{max-width:100%;max-height:120px;border-radius:4px;margin-top:8px;display:none}
-  /* BUTTONS */
   .btn{padding:8px 20px;border-radius:6px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:all .15s;border:none}
   .btn-gold{background:var(--gold);color:#0a0c10}.btn-gold:hover{background:var(--gold2)}.btn-gold:disabled{opacity:.5;cursor:not-allowed}
   .btn-ol{background:none;border:1px solid var(--border);color:var(--text);padding:7px 16px}
   .btn-ol:hover{border-color:var(--gold);color:var(--gold)}
   .btn-del{background:var(--red);color:#fff;padding:4px 10px;font-size:12px;border-radius:4px;border:none;cursor:pointer}
+  .btn-green{background:var(--green);color:#0a0c10;padding:4px 10px;font-size:12px;border-radius:4px;border:none;cursor:pointer;font-weight:600}
   .btn-sm{padding:5px 12px;font-size:12px}
+  /* OVERCHARGE / DEATH */
+  .oc-toggle{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;margin-bottom:8px;transition:border-color .15s}
+  .oc-toggle:hover{border-color:var(--gold)}
+  .oc-toggle input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+  .oc-toggle span{font-size:13px;color:var(--text);font-weight:500}
+  .oc-toggle .oc-badge{font-size:10px;background:rgba(201,162,39,.15);color:var(--gold2);border:1px solid rgba(201,162,39,.3);border-radius:4px;padding:2px 8px;margin-left:auto}
+  .death-badge{background:rgba(224,58,58,.15);color:var(--red);border:1px solid rgba(224,58,58,.3)}
+  .oc-section{display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px}
+  .oc-section.visible{display:block}
+  .builds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px}
+  .build-btn{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--text2);transition:all .15s;text-align:center}
+  .build-btn:hover{border-color:var(--gold);color:var(--gold)}
+  .build-btn.active{border-color:var(--gold);background:rgba(201,162,39,.1);color:var(--gold2)}
+  .build-btn.active-death{border-color:var(--red);background:rgba(224,58,58,.1);color:var(--red)}
+  .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .part-check{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:border-color .15s}
+  .part-check:hover{border-color:var(--gold)}
+  .part-check.checked{border-color:var(--red);background:rgba(224,58,58,.08)}
+  .part-check input{width:14px;height:14px;accent-color:var(--red);cursor:pointer}
+  .part-check span{font-size:12px;font-family:var(--mono)}
   /* STATS */
-  .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+  .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:12px 0}
   .scard{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
   .snum{font-size:26px;font-weight:700;font-family:var(--mono);color:var(--gold2)}
   .slbl{font-size:11px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-  /* CHARTS */
-  .charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:12px 0}
-  .chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px}
-  .chart-box canvas{max-height:260px}
-  .chart-title{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;font-weight:500}
-  /* PLAYER PIZZA TABLE */
-  .player-select-wrap{margin-bottom:12px;display:flex;align-items:center;gap:10px}
-  .player-select-wrap label{font-size:12px;color:var(--text2)}
-  .player-select-wrap select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-family:var(--mono);font-size:12px}
+  .charts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:12px 0}
+  .chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px}
+  .chart-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-weight:500}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:11px;color:var(--text2)}
+  .chart-legend span{display:flex;align-items:center;gap:4px}
+  .legend-dot{width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0}
+  .radar-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}
+  /* SHOPPING */
+  .shop-build{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin:10px 0}
+  .shop-build-title{font-family:var(--mono);font-size:14px;color:var(--gold2);margin-bottom:10px;font-weight:600}
+  .shop-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+  .shop-item{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+  .shop-item-name{font-size:13px;font-family:var(--mono)}
+  .shop-item-qty{font-size:18px;font-weight:700;font-family:var(--mono);color:var(--gold2)}
+  /* MEMBERS */
+  .member-row{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:8px 0;display:flex;align-items:center;gap:12px}
+  .member-row.inactive{opacity:.45}
+  .member-nick{font-family:var(--mono);font-size:13px;color:var(--gold2);min-width:140px}
+  .member-dates{font-size:11px;color:var(--text2)}
+  .member-notes{font-size:12px;color:var(--text2);flex:1;font-style:italic}
   /* TABLE */
   .tw{overflow-x:auto;margin:10px 0}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th{text-align:left;padding:8px 12px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);font-weight:500}
   td{padding:8px 12px;border-bottom:1px solid var(--border)}
   tr:hover td{background:var(--bg3)}
-  /* BADGES */
   .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-family:var(--mono)}
   .bg{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3)}
   .br{background:rgba(224,58,58,.15);color:var(--red);border:1px solid rgba(224,58,58,.3)}
   .ba2{background:rgba(201,162,39,.15);color:var(--gold2);border:1px solid rgba(201,162,39,.3)}
-  /* KILLS GRID */
-  .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:8px;margin:10px 0}
+  .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin:10px 0}
   .kcard{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center}
   .knum{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--gold2)}
   .kname{font-size:10px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
   .kcard.has{border-color:var(--gold)}
-  /* REGEAR */
   .rg-item{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin:8px 0;display:flex;gap:12px;align-items:flex-start}
+  .rg-item.paid-item{border-color:#2a2e3a;opacity:.6}
   .rg-info{flex:1}.rg-nick{font-family:var(--mono);font-size:13px;color:var(--gold2)}
   .rg-meta{font-size:12px;color:var(--text2);margin-top:4px}
+  .rg-oc{font-size:11px;color:var(--gold);margin-top:3px;font-family:var(--mono)}
+  .rg-death{font-size:11px;color:var(--red);margin-top:3px;font-family:var(--mono)}
   .stbadge{padding:3px 10px;border-radius:4px;font-size:11px;font-family:var(--mono)}
   .stbadge.clk{cursor:pointer;border:none}.stbadge.clk:hover{opacity:.8}
   .st-p{background:rgba(201,162,39,.15);color:var(--gold2);border:1px solid rgba(201,162,39,.3)}
   .st-a{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3)}
   .st-d{background:rgba(224,58,58,.15);color:var(--red);border:1px solid rgba(224,58,58,.3)}
-  /* ALERTS */
   .alert{padding:10px 14px;border-radius:6px;font-size:13px;margin:8px 0}
   .alert-s{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);color:var(--green);display:none}
   .alert-i{background:rgba(59,139,235,.1);border:1px solid rgba(59,139,235,.3);color:var(--blue)}
@@ -135,9 +153,11 @@
   .aic{align-items:center}.jb{justify-content:space-between}.wrap{flex-wrap:wrap}
   .modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center}
   .modal-ov.open{display:flex}
-  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:480px;width:90%}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:480px;width:90%;max-height:85vh;overflow-y:auto}
   .modal h2{margin-bottom:14px}
   .xbtn{float:right;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
+  textarea{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical;width:100%}
+  textarea:focus{outline:none;border-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -171,18 +191,9 @@
           <option value="admin">Admin</option>
         </select>
       </div>
-      <div class="lf" id="field-nick-player">
-        <label>Seu nick</label>
-        <select id="login-nick"></select>
-      </div>
-      <div class="lf" id="field-nick-officer" style="display:none">
-        <label>Seu nick</label>
-        <input type="text" id="login-officer-nick" placeholder="Ex: RAGNALDOKHUN">
-      </div>
-      <div class="lf" id="field-pass" style="display:none">
-        <label>Senha</label>
-        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-      </div>
+      <div class="lf" id="field-nick-player"><label>Seu nick</label><select id="login-nick"></select></div>
+      <div class="lf" id="field-nick-officer" style="display:none"><label>Seu nick</label><input type="text" id="login-officer-nick" placeholder="Ex: RAGNALDOKHUN"></div>
+      <div class="lf" id="field-pass" style="display:none"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="err" id="login-err"></div>
       <button class="btn btn-gold" style="width:100%;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
     </div>
@@ -217,6 +228,8 @@
     <button class="nav-btn" onclick="showPage('kills',this)">Kills</button>
     <button class="nav-btn" onclick="showPage('regear',this)">Re-Gear</button>
     <button class="nav-btn" id="stats-tab" style="display:none" onclick="showPage('stats',this)">Estatísticas</button>
+    <button class="nav-btn" id="shopping-tab" style="display:none" onclick="showPage('shopping',this)">Compras</button>
+    <button class="nav-btn" id="members-tab" style="display:none" onclick="showPage('members',this)">Membros</button>
   </div>
 
   <!-- ATTENDANCE -->
@@ -225,10 +238,10 @@
     <div class="dr" style="margin-top:14px"><label>Data</label><input type="date" id="att-date" onchange="onDateChange()"></div>
     <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 4px">Selecione a CTA</div>
     <div class="cta-grid">
-      <div class="cta-card" onclick="selectCTA('15:30 UTC')" id="cta-1530"><div class="cta-time">15:30 UTC</div><div class="cta-lbl">CTA 1 · TARDE</div><div class="cta-cnt" id="cnt-1530">— presentes</div></div>
-      <div class="cta-card" onclick="selectCTA('17:10 UTC')" id="cta-1710"><div class="cta-time">17:10 UTC</div><div class="cta-lbl">CTA 2 · TARDE</div><div class="cta-cnt" id="cnt-1710">— presentes</div></div>
-      <div class="cta-card" onclick="selectCTA('19:10 UTC')" id="cta-1910"><div class="cta-time">19:10 UTC</div><div class="cta-lbl">CTA 3 · NOITE</div><div class="cta-cnt" id="cnt-1910">— presentes</div></div>
-      <div class="cta-card" onclick="selectCTA('23:10 UTC')" id="cta-2310"><div class="cta-time">23:10 UTC</div><div class="cta-lbl">CTA 4 · NOITE</div><div class="cta-cnt" id="cnt-2310">— presentes</div></div>
+      <div class="cta-card" onclick="selectCTA('15:30 UTC')" id="cta-1530"><div class="cta-time">15:30 UTC</div><div class="cta-lbl">CTA 1 · TARDE</div><div class="cta-cnt" id="cnt-1530">—</div></div>
+      <div class="cta-card" onclick="selectCTA('17:10 UTC')" id="cta-1710"><div class="cta-time">17:10 UTC</div><div class="cta-lbl">CTA 2 · TARDE</div><div class="cta-cnt" id="cnt-1710">—</div></div>
+      <div class="cta-card" onclick="selectCTA('19:10 UTC')" id="cta-1910"><div class="cta-time">19:10 UTC</div><div class="cta-lbl">CTA 3 · NOITE</div><div class="cta-cnt" id="cnt-1910">—</div></div>
+      <div class="cta-card" onclick="selectCTA('23:10 UTC')" id="cta-2310"><div class="cta-time">23:10 UTC</div><div class="cta-lbl">CTA 4 · NOITE</div><div class="cta-cnt" id="cnt-2310">—</div></div>
     </div>
     <div class="sec" id="att-section" style="display:none">
       <div class="flex aic jb gap8">
@@ -268,7 +281,7 @@
       </div>
     </div>
     <div class="sec">
-      <div class="sec-title">Print do kill feed / fame</div>
+      <div class="sec-title">Print do kill feed</div>
       <div class="upl"><input type="file" accept="image/*" onchange="handleImg(event,'kill-prev',1)"><p>Clique ou arraste aqui</p><img id="kill-prev" class="upl-prev"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
@@ -282,24 +295,75 @@
   <!-- REGEAR -->
   <div id="page-regear" class="page">
     <h2>Pedido de Re-Gear</h2>
-    <div class="alert alert-i" style="margin:12px 0">Anexe o print da morte. O officer aprova ou nega.</div>
+    <div class="alert alert-i" style="margin:12px 0">Marque se morreu e/ou teve overcharge quebrado. O officer aprova e marca como pago.</div>
     <div class="fi"><label>Data</label><input type="date" id="rg-date"></div>
     <div class="fi"><label>CTA</label><select id="rg-cta"><option>15:30 UTC</option><option>17:10 UTC</option><option>19:10 UTC</option><option>23:10 UTC</option></select></div>
     <div class="fi" id="rg-player-fi" style="display:none"><label>Player</label><select id="rg-player"></select></div>
+
+    <!-- MORTE -->
+    <label class="oc-toggle">
+      <input type="checkbox" id="death-check" onchange="toggleDeath()">
+      <span>Morreu no bomb</span>
+      <span class="oc-badge death-badge">MORTE</span>
+    </label>
+    <div class="oc-section" id="death-section">
+      <div class="sec-title" style="margin-bottom:10px">Qual era sua role?</div>
+      <div class="builds-grid" id="death-builds-grid"></div>
+    </div>
+
+    <!-- OVERCHARGE -->
+    <label class="oc-toggle">
+      <input type="checkbox" id="oc-check" onchange="toggleOvercharge()">
+      <span>Quebra de Overcharge</span>
+      <span class="oc-badge">OC</span>
+    </label>
+    <div class="oc-section" id="oc-section">
+      <div class="sec-title" style="margin-bottom:10px">Selecione a build</div>
+      <div class="builds-grid" id="builds-grid"></div>
+      <div id="parts-section" style="display:none">
+        <div class="sec-title" style="margin-bottom:10px">Peças quebradas — <span id="parts-build-name" style="color:var(--gold2)"></span></div>
+        <div class="parts-grid" id="parts-grid"></div>
+      </div>
+    </div>
+
     <div class="sec">
       <div class="sec-title">Print da morte (obrigatório)</div>
       <div class="upl"><input type="file" accept="image/*" onchange="handleImg(event,'rg-prev',2)"><p>Clique ou arraste o print da sua morte</p><img id="rg-prev" class="upl-prev"></div>
     </div>
     <div class="sec">
       <div class="sec-title">Observação (opcional)</div>
-      <textarea id="rg-note" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical;min-height:60px" placeholder="Ex: morri no bomb principal..."></textarea>
+      <textarea id="rg-note" style="min-height:60px" placeholder="Ex: morri no bomb principal..."></textarea>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-gold" onclick="saveRegear()">Enviar pedido</button>
       <div class="alert alert-s" id="rg-ok" style="margin:0">Enviado!</div>
       <div class="alert alert-e" id="rg-err" style="margin:0"></div>
     </div>
-    <div class="sec" style="margin-top:20px"><div class="sec-title" id="rg-list-title">Meus pedidos</div><div id="regear-list"></div></div>
+    <div class="sec" style="margin-top:20px">
+      <div class="flex aic jb gap8">
+        <div class="sec-title" style="margin:0" id="rg-list-title">Meus pedidos</div>
+        <div class="flex gap8" id="rg-filter-row" style="display:none">
+          <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="rg-hide-paid" onchange="loadRegearList()"> Ocultar pagos
+          </label>
+        </div>
+      </div>
+      <div id="regear-list" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- COMPRAS -->
+  <div id="page-shopping" class="page">
+    <h2>Lista de Compras</h2>
+    <div class="alert alert-i" style="margin:12px 0">Consolidação de re-gears aprovados e não pagos. Filtre por período para calcular o que comprar.</div>
+    <div class="flex aic gap8 mt12 wrap">
+      <div class="dr" style="margin:0"><label>De</label><input type="date" id="shop-from" style="width:135px"></div>
+      <div class="dr" style="margin:0"><label>Até</label><input type="date" id="shop-to" style="width:135px"></div>
+      <button class="btn btn-ol btn-sm" onclick="loadShopping()">Calcular</button>
+    </div>
+    <div id="shopping-content" style="margin-top:16px">
+      <p style="color:var(--text2);font-size:13px">Clique em Calcular para ver a lista de compras.</p>
+    </div>
   </div>
 
   <!-- STATS -->
@@ -312,40 +376,87 @@
       <button class="btn btn-ol btn-sm" onclick="clearStFilter()">Limpar</button>
       <button class="btn btn-ol btn-sm" onclick="exportCSV()">Exportar CSV</button>
     </div>
-
     <div class="sgrid" id="stats-sum" style="margin-top:16px"></div>
-
-    <!-- Gráficos pizza por player -->
     <div class="sec">
-      <div class="sec-title">Estatísticas por player</div>
-      <div class="player-select-wrap">
-        <label>Player:</label>
-        <select id="pizza-player" onchange="renderPizzaCharts()"></select>
-      </div>
-      <div class="charts-grid" id="pizza-charts">
-        <div class="chart-box"><div class="chart-title">Attendance</div><canvas id="chart-att"></canvas></div>
-        <div class="chart-box"><div class="chart-title">Kills por CTA</div><canvas id="chart-kills"></canvas></div>
-        <div class="chart-box"><div class="chart-title">Re-gear</div><canvas id="chart-rg"></canvas></div>
+      <div class="sec-title">Visão geral do guild</div>
+      <div class="charts-row">
+        <div class="chart-box">
+          <div class="chart-title">Kills por player</div>
+          <div class="chart-legend" id="leg-kills"></div>
+          <div style="position:relative;height:190px"><canvas id="chart-kills-guild" role="img" aria-label="Pizza kills">Kills por player.</canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Attendance geral</div>
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:#2ecc71"></span>Presentes</span>
+            <span><span class="legend-dot" style="background:#e03a3a"></span>Ausentes</span>
+            <span><span class="legend-dot" style="background:#2a2e3a"></span>Sem reg.</span>
+          </div>
+          <div style="position:relative;height:190px"><canvas id="chart-att-guild" role="img" aria-label="Pizza attendance">Attendance.</canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Re-gears</div>
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:#2ecc71"></span>Aprovados</span>
+            <span><span class="legend-dot" style="background:#e03a3a"></span>Negados</span>
+            <span><span class="legend-dot" style="background:#c9a227"></span>Pendentes</span>
+          </div>
+          <div style="position:relative;height:190px"><canvas id="chart-rg-guild" role="img" aria-label="Pizza regear">Re-gears.</canvas></div>
+        </div>
       </div>
     </div>
-
     <div class="sec">
-      <div class="sec-title">Attendance por player</div>
-      <div class="tw" id="stats-att"></div>
+      <div class="sec-title">Radar por player</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <label style="font-size:12px;color:var(--text2)">Player:</label>
+        <select id="radar-player" onchange="renderRadar()" style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text);font-family:var(--mono);font-size:12px"></select>
+      </div>
+      <div class="charts-row" style="align-items:start">
+        <div class="chart-box">
+          <div style="position:relative;height:260px;max-width:340px;margin:0 auto">
+            <canvas id="chart-radar" role="img" aria-label="Radar player">Radar.</canvas>
+          </div>
+        </div>
+        <div><div class="radar-cards" id="radar-cards"></div></div>
+      </div>
     </div>
+    <div class="sec"><div class="sec-title">Attendance por player</div><div class="tw" id="stats-att"></div></div>
     <div class="sec"><div class="sec-title">Ranking de kills</div><div id="stats-kills"></div></div>
     <div class="sec"><div class="sec-title">Re-gear</div><div id="stats-rg"></div></div>
-    <div style="margin-top:20px">
-      <button class="btn btn-del" style="font-size:13px;padding:7px 16px" onclick="confirmClear()">Limpar todos os dados</button>
+    <div style="margin-top:20px"><button class="btn btn-del" style="font-size:13px;padding:7px 16px" onclick="confirmClear()">Limpar todos os dados</button></div>
+  </div>
+
+  <!-- MEMBROS -->
+  <div id="page-members" class="page">
+    <h2>Gerenciar Membros</h2>
+    <div class="sec" style="margin-top:14px">
+      <div class="sec-title">Adicionar / atualizar membro</div>
+      <div class="flex gap8 wrap aic">
+        <select id="mb-nick" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-family:var(--mono);font-size:13px;width:180px"></select>
+        <div class="dr" style="margin:0"><label style="min-width:auto;font-size:12px">Entrou em</label><input type="date" id="mb-joined" style="width:140px"></div>
+        <input type="text" id="mb-notes" placeholder="Observações (opcional)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-family:var(--mono);font-size:13px;width:200px">
+        <button class="btn btn-gold btn-sm" onclick="saveMember()">Salvar</button>
+      </div>
+      <div class="alert alert-s" id="mb-ok" style="margin-top:8px">Salvo!</div>
+      <div class="alert alert-e" id="mb-err" style="margin-top:8px"></div>
+    </div>
+    <div class="sec">
+      <div class="flex aic jb gap8">
+        <div class="sec-title" style="margin:0">Membros cadastrados</div>
+        <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="show-inactive" onchange="loadMembers()"> Mostrar inativos
+        </label>
+      </div>
+      <div id="members-list" style="margin-top:12px"></div>
     </div>
   </div>
-</div>
+</div><!-- /main -->
 
 <div class="modal-ov" id="modal-confirm">
   <div class="modal">
     <button class="xbtn" onclick="closeModal()">×</button>
     <h2>Confirmar limpeza</h2>
-    <p style="margin:12px 0;font-size:13px;color:var(--text2)">Isso vai apagar TODOS os dados do banco. Tem certeza?</p>
+    <p style="margin:12px 0;font-size:13px;color:var(--text2)">Isso vai apagar TODOS os dados. Tem certeza?</p>
     <div class="flex gap8 mt12">
       <button class="btn btn-del" style="padding:7px 18px;font-size:13px" onclick="clearAllData()">Apagar tudo</button>
       <button class="btn btn-ol" onclick="closeModal()">Cancelar</button>
@@ -353,49 +464,60 @@
   </div>
 </div>
 
+<div class="modal-ov" id="modal-deactivate">
+  <div class="modal">
+    <button class="xbtn" onclick="document.getElementById('modal-deactivate').classList.remove('open')">×</button>
+    <h2>Marcar como inativo</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Player: <span id="deact-nick" style="color:var(--gold2)"></span></p>
+    <div class="fi"><label>Data de saída</label><input type="date" id="deact-date" style="width:160px"></div>
+    <div class="flex gap8 mt12">
+      <button class="btn btn-del" style="padding:7px 18px;font-size:13px" onclick="confirmDeactivate()">Confirmar saída</button>
+      <button class="btn btn-ol" onclick="document.getElementById('modal-deactivate').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETE','GAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
+const BUILDS={'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],'Fire':['Capacete','Peito','Bota','Canção da Alvorada'],'Caller':['Capacete','Peito','Bota','Bruxo','Lume Críptico'],'Frost':['Capacete','Peito','Bota','Prisma'],'Piercers':['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário']};
+const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
+
 let session={role:null,nick:null,adminPass:null,officerNick:null};
-let selectedCTA=null;
-let imgs=[null,null,null];
-let attData={};
-let statsCache=null;
-let chartAtt=null,chartKills=null,chartRg=null;
+let selectedCTA=null,imgs=[null,null,null],attData={},statsCache=null;
+let charts={killsGuild:null,attGuild:null,rgGuild:null,radar:null};
+let selectedBuild=null,selectedDeathRole=null,membersCache=[];
+let deactNick=null;
 
 const isAdmin=()=>session.role==='admin';
 const today=()=>new Date().toISOString().split('T')[0];
+const inactiveNicks=()=>new Set(membersCache.filter(m=>!m.active).map(m=>m.nick));
 
 function authHeaders(){
   const h={'Content-Type':'application/json'};
-  if(isAdmin()){
-    h['x-admin-pass']=session.adminPass;
-    if(session.officerNick)h['x-officer-nick']=session.officerNick;
-  } else if(session.nick) h['x-player-nick']=session.nick;
+  if(isAdmin()){h['x-admin-pass']=session.adminPass;if(session.officerNick)h['x-officer-nick']=session.officerNick;}
+  else if(session.nick)h['x-player-nick']=session.nick;
   return h;
 }
-
 async function api(method,path,body){
   const opts={method,headers:authHeaders()};
   if(body)opts.body=JSON.stringify(body);
-  const r=await fetch(path,opts);
-  const data=await r.json();
+  const r=await fetch(path,opts);const data=await r.json();
   if(!r.ok)throw new Error(data.error||'Erro desconhecido');
   return data;
 }
 
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
 function toggleLoginType(){
   const t=document.getElementById('login-type').value;
   document.getElementById('field-nick-player').style.display=t==='player'?'block':'none';
   document.getElementById('field-nick-officer').style.display=t==='officer'?'block':'none';
   document.getElementById('field-pass').style.display=t!=='player'?'block':'none';
 }
-
 async function doLogin(){
   const type=document.getElementById('login-type').value;
   const nick=type==='player'?document.getElementById('login-nick').value:document.getElementById('login-officer-nick').value.trim().toUpperCase();
   const password=document.getElementById('login-pass').value;
-  const errEl=document.getElementById('login-err');
-  const btn=document.getElementById('login-btn');
+  const errEl=document.getElementById('login-err'),btn=document.getElementById('login-btn');
   errEl.style.display='none';btn.innerHTML='<span class="sp"></span>Entrando...';btn.disabled=true;
   try{
     const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,nick,password})});
@@ -405,41 +527,98 @@ async function doLogin(){
   }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
   finally{btn.innerHTML='Entrar';btn.disabled=false;}
 }
-
 function logout(){
   session={role:null,nick:null,adminPass:null,officerNick:null};
-  selectedCTA=null;attData={};imgs=[null,null,null];statsCache=null;
-  document.getElementById('login-pass').value='';
-  document.getElementById('login-officer-nick').value='';
+  selectedCTA=null;imgs=[null,null,null];attData={};statsCache=null;membersCache=[];
+  selectedBuild=null;selectedDeathRole=null;
+  document.getElementById('login-pass').value='';document.getElementById('login-officer-nick').value='';
   document.getElementById('login-err').style.display='none';
   document.getElementById('main-screen').style.display='none';
   document.getElementById('login-screen').style.display='block';
   document.getElementById('att-section').style.display='none';
   document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
+  resetOvercharge();resetDeath();
 }
-
 function initApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-screen').style.display='block';
   document.getElementById('badge-name').textContent=session.nick;
   document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
-  document.getElementById('stats-tab').style.display=isAdmin()?'':'none';
+  ['stats-tab','shopping-tab','members-tab'].forEach(id=>document.getElementById(id).style.display=isAdmin()?'':'none');
   document.getElementById('mark-all-btns').style.display=isAdmin()?'flex':'none';
   document.getElementById('pinfo').style.display=isAdmin()?'none':'block';
   document.getElementById('kill-player-fi').style.display=isAdmin()?'block':'none';
   document.getElementById('rg-player-fi').style.display=isAdmin()?'block':'none';
   document.getElementById('rg-list-title').textContent=isAdmin()?'Todos os pedidos':'Meus pedidos';
+  document.getElementById('rg-filter-row').style.display=isAdmin()?'flex':'none';
   if(isAdmin()){
-    ['kill-player','rg-player'].forEach(id=>{document.getElementById(id).innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');});
-    document.getElementById('pizza-player').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
+    ['kill-player','rg-player','mb-nick'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
+    });
+    document.getElementById('radar-player').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
   }
-  const t=today();
-  ['att-date','kill-date','rg-date','st-from','st-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  buildBuildsGrids();
+  const t=today();['att-date','kill-date','rg-date','st-from','st-to','shop-from','shop-to','mb-joined','deact-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  if(isAdmin())api('GET','/api/members').then(m=>{membersCache=m;}).catch(()=>{});
   loadAttendanceCounts();loadKillsTable();loadRegearList();
   if(isAdmin())loadStats();
 }
 
-// ── Attendance ────────────────────────────────────────────────────────────────
+// ── BUILDS ────────────────────────────────────────────────────────────────────
+function buildBuildsGrids(){
+  const buildHTML=(onclick,activeClass)=>Object.keys(BUILDS).map(b=>
+    `<div class="build-btn" onclick="${onclick}('${b}')" id="${activeClass}-${b}">${b}</div>`).join('');
+  document.getElementById('death-builds-grid').innerHTML=buildHTML('selectDeathRole','death-build');
+  document.getElementById('builds-grid').innerHTML=buildHTML('selectBuild','build');
+}
+function selectDeathRole(build){
+  selectedDeathRole=build;
+  document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));
+  document.getElementById('death-build-'+build).classList.add('active-death');
+}
+function toggleDeath(){
+  const checked=document.getElementById('death-check').checked;
+  document.getElementById('death-section').classList.toggle('visible',checked);
+  if(!checked){selectedDeathRole=null;document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));}
+}
+function selectBuild(build){
+  selectedBuild=build;
+  document.querySelectorAll('[id^="build-"]').forEach(b=>{if(b.id.startsWith('build-')&&!b.id.startsWith('build-btn'))b.classList.remove('active');});
+  document.querySelectorAll('.build-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('build-'+build).classList.add('active');
+  document.getElementById('parts-build-name').textContent=build;
+  document.getElementById('parts-grid').innerHTML=BUILDS[build].map(p=>
+    `<label class="part-check" id="part-${p.replace(/\s/g,'_')}"><input type="checkbox" value="${p}" onchange="togglePartCheck(this)"> <span>${p}</span></label>`
+  ).join('');
+  document.getElementById('parts-section').style.display='block';
+}
+function togglePartCheck(cb){cb.closest('.part-check').classList.toggle('checked',cb.checked);}
+function toggleOvercharge(){
+  const checked=document.getElementById('oc-check').checked;
+  document.getElementById('oc-section').classList.toggle('visible',checked);
+  if(!checked)resetOvercharge();
+}
+function resetOvercharge(){
+  selectedBuild=null;
+  document.getElementById('oc-check').checked=false;
+  document.getElementById('oc-section').classList.remove('visible');
+  document.getElementById('parts-section').style.display='none';
+  document.querySelectorAll('.build-btn').forEach(b=>b.classList.remove('active'));
+}
+function resetDeath(){
+  selectedDeathRole=null;
+  document.getElementById('death-check').checked=false;
+  document.getElementById('death-section').classList.remove('visible');
+  document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));
+}
+function getOverchargeData(){
+  const checked=document.getElementById('oc-check').checked;
+  if(!checked)return{overcharge:false,overcharge_build:null,overcharge_parts:[]};
+  const parts=[...document.querySelectorAll('.part-check input:checked')].map(cb=>cb.value);
+  return{overcharge:true,overcharge_build:selectedBuild,overcharge_parts:parts};
+}
+
+// ── ATTENDANCE ────────────────────────────────────────────────────────────────
 async function loadAttendanceCounts(){
   const date=document.getElementById('att-date').value;
   try{attData=await api('GET',`/api/attendance?date=${date}`);}catch(e){attData={};}
@@ -450,9 +629,7 @@ async function loadAttendanceCounts(){
   });
   if(selectedCTA)renderPlayerList();
 }
-
 function onDateChange(){loadAttendanceCounts();}
-
 function selectCTA(cta){
   selectedCTA=cta;
   document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
@@ -461,31 +638,35 @@ function selectCTA(cta){
   document.getElementById('att-cta-lbl').textContent=cta;
   renderPlayerList();
 }
-
 function renderPlayerList(){
   const data=attData[selectedCTA]||{present:[],absent:[]};
+  const inactive=inactiveNicks();
   const html=PLAYERS.map(p=>{
-    const isP=data.present.includes(p);const isA=data.absent.includes(p);
-    const isSelf=p===session.nick;const canToggle=isAdmin()||isSelf;
-    const selfCls=isSelf&&!isAdmin()?'self-row':'';const dis=canToggle?'':'disabled';
-    return`<div class="player-row ${isP?'present':isA?'absent':''} ${selfCls}" id="pr-${p}">
-      <span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}</span>
+    const isP=data.present.includes(p),isA=data.absent.includes(p);
+    const isSelf=p===session.nick,canToggle=isAdmin()||isSelf;
+    const isInactive=inactive.has(p);
+    const cls=`player-row ${isP?'present':isA?'absent':''} ${isSelf&&!isAdmin()?'self-row':''} ${isInactive?'inactive-row':''}`;
+    const dis=canToggle&&!isInactive?'':'disabled';
+    return`<div class="${cls}" id="pr-${p}">
+      <span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}${isInactive?' <span style="font-size:9px;color:var(--text2)">[inativo]</span>':''}</span>
       <div class="tbtn">
-        <button class="bp ${isP?'on':''}" onclick="${canToggle?`tgl('${p}',true)`:''}" ${dis}>✓</button>
-        <button class="bp ba ${isA?'on':''}" onclick="${canToggle?`tgl('${p}',false)`:''}" ${dis}>✗</button>
+        <button class="bp ${isP?'on':''}" onclick="${canToggle&&!isInactive?`tgl('${p}',true)`:''}" ${dis}>✓</button>
+        <button class="bp ba ${isA?'on':''}" onclick="${canToggle&&!isInactive?`tgl('${p}',false)`:''}" ${dis}>✗</button>
       </div></div>`;
   }).join('');
   document.getElementById('player-list').innerHTML=html;
 }
-
 function tgl(name,present){
   const row=document.getElementById('pr-'+name);const btns=row.querySelectorAll('.bp');
   const isSelf=name===session.nick&&!isAdmin();
   row.className=`player-row ${present?'present':'absent'}${isSelf?' self-row':''}`;
   btns[0].className='bp'+(present?' on':'');btns[1].className='bp ba'+(present?'':' on');
 }
-function markAll(present){if(!isAdmin())return;PLAYERS.forEach(p=>tgl(p,present));}
-
+function markAll(present){
+  if(!isAdmin())return;
+  const inactive=inactiveNicks();
+  PLAYERS.filter(p=>!inactive.has(p)).forEach(p=>tgl(p,present));
+}
 async function saveAttendance(){
   const date=document.getElementById('att-date').value;
   const btn=document.getElementById('att-save-btn');btn.disabled=true;btn.innerHTML='<span class="sp"></span>Salvando...';
@@ -493,9 +674,7 @@ async function saveAttendance(){
     const saves=[];
     PLAYERS.forEach(p=>{
       const row=document.getElementById('pr-'+p);if(!row)return;
-      let status=null;
-      if(row.classList.contains('present'))status='present';
-      else if(row.classList.contains('absent'))status='absent';
+      const status=row.classList.contains('present')?'present':row.classList.contains('absent')?'absent':null;
       if(status&&(isAdmin()||p===session.nick))saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));
     });
     await Promise.all(saves);flash('att-ok');await loadAttendanceCounts();
@@ -503,10 +682,9 @@ async function saveAttendance(){
   finally{btn.disabled=false;btn.textContent='Salvar';}
 }
 
-// ── Kills ─────────────────────────────────────────────────────────────────────
+// ── KILLS ─────────────────────────────────────────────────────────────────────
 async function saveKill(){
-  const date=document.getElementById('kill-date').value;
-  const cta=document.getElementById('kill-cta').value;
+  const date=document.getElementById('kill-date').value,cta=document.getElementById('kill-cta').value;
   const player=isAdmin()?document.getElementById('kill-player').value:session.nick;
   const kill_count=parseInt(document.getElementById('kill-count').value)||0;
   try{
@@ -515,63 +693,65 @@ async function saveKill(){
     flash('kill-ok');loadKillsTable();
   }catch(e){flashErr('kill-err',e.message);}
 }
-
 async function loadKillsTable(){
   try{
     const rows=await api('GET','/api/kills');
     if(!rows.length){document.getElementById('kills-table').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum kill registrado.</p>';return;}
     let html='<table><thead><tr><th>Data</th><th>CTA</th><th>Player</th><th>Kills</th><th>Print</th><th></th></tr></thead><tbody>';
     rows.slice(0,60).forEach(k=>{
-      const canDel=isAdmin()||k.player===session.nick;
-      // Format date properly
       const d=k.date?k.date.split('T')[0]:'-';
-      html+=`<tr>
-        <td style="font-family:var(--mono);font-size:12px">${d}</td>
-        <td style="font-family:var(--mono);font-size:11px">${k.cta}</td>
-        <td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td>
-        <td><span class="badge ba2">${k.kill_count}</span></td>
-        <td>${k.screenshot?`<img src="${k.screenshot}" style="width:40px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer" onclick="viewImg('${k.screenshot}')">`:'-'}</td>
-        <td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td>
-      </tr>`;
+      const canDel=isAdmin()||k.player===session.nick;
+      html+=`<tr><td style="font-family:var(--mono);font-size:12px">${d}</td><td style="font-family:var(--mono);font-size:11px">${k.cta}</td><td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td><td><span class="badge ba2">${k.kill_count}</span></td><td>${k.screenshot?`<img src="${k.screenshot}" style="width:40px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer" onclick="viewImg('${k.screenshot}')">`:'-'}</td><td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td></tr>`;
     });
-    html+='</tbody></table>';
-    document.getElementById('kills-table').innerHTML=html;
+    html+='</tbody></table>';document.getElementById('kills-table').innerHTML=html;
   }catch(e){}
 }
 async function delKill(id){try{await api('DELETE',`/api/kills/${id}`);loadKillsTable();}catch(e){}}
 
-// ── Re-gear ───────────────────────────────────────────────────────────────────
+// ── REGEAR ────────────────────────────────────────────────────────────────────
 async function saveRegear(){
-  const date=document.getElementById('rg-date').value;
-  const cta=document.getElementById('rg-cta').value;
+  const date=document.getElementById('rg-date').value,cta=document.getElementById('rg-cta').value;
   const player=isAdmin()?document.getElementById('rg-player').value:session.nick;
   const note=document.getElementById('rg-note').value;
   if(!imgs[2]){flashErr('rg-err','Anexe o print da morte!');return;}
+  const ocData=getOverchargeData();
+  const death_role=document.getElementById('death-check').checked?selectedDeathRole:null;
   try{
-    await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2]});
+    await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2],death_role,...ocData});
     imgs[2]=null;document.getElementById('rg-note').value='';document.getElementById('rg-prev').style.display='none';
-    flash('rg-ok');loadRegearList();
+    resetOvercharge();resetDeath();flash('rg-ok');loadRegearList();
   }catch(e){flashErr('rg-err',e.message);}
 }
-
 async function loadRegearList(){
+  const hidePaid=isAdmin()&&document.getElementById('rg-hide-paid')?.checked;
   try{
     const rows=await api('GET','/api/regear');
-    if(!rows.length){document.getElementById('regear-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum pedido ainda.</p>';return;}
+    const filtered=hidePaid?rows.filter(r=>!r.paid):rows;
+    if(!filtered.length){document.getElementById('regear-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum pedido ainda.</p>';return;}
     let html='';const next={pending:'approved',approved:'denied',denied:'pending'};
-    rows.forEach(r=>{
+    filtered.forEach(r=>{
       const cls=r.status==='approved'?'st-a':r.status==='denied'?'st-d':'st-p';
       const lbl=r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
       const d=r.date?r.date.split('T')[0]:'-';
-      html+=`<div class="rg-item">
-        ${r.screenshot?`<img src="${r.screenshot}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:``}
+      let ocInfo='',deathInfo='';
+      if(r.death_role)deathInfo=`<div class="rg-death">☠ Morte — role: ${r.death_role} (set completo)</div>`;
+      if(r.overcharge&&r.overcharge_build){
+        const parts=Array.isArray(r.overcharge_parts)?r.overcharge_parts:(JSON.parse(r.overcharge_parts||'[]'));
+        ocInfo=`<div class="rg-oc">⚡ OC ${r.overcharge_build}${parts.length?' · '+parts.join(', '):''}</div>`;
+      }
+      const paidBadge=r.paid?'<span class="badge bg" style="font-size:10px">PAGO</span>':'';
+      html+=`<div class="rg-item ${r.paid?'paid-item':''}">
+        ${r.screenshot?`<img src="${r.screenshot}" style="width:56px;height:56px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:``}
         <div class="rg-info">
-          <div class="rg-nick">${r.player}</div>
+          <div class="flex aic gap8"><div class="rg-nick">${r.player}</div>${paidBadge}</div>
           <div class="rg-meta">${d} · ${r.cta}${r.note?' · '+r.note:''}</div>
+          ${deathInfo}${ocInfo}
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-            ${isAdmin()?`<button class="stbadge clk ${cls}" onclick="setRgStatus(${r.id},'${next[r.status]}')">${lbl}</button>
-              <button class="btn-del" onclick="delRegear(${r.id})">Remover</button>`
-            :`<span class="stbadge ${cls}">${lbl}</span>`}
+            ${isAdmin()?`
+              <button class="stbadge clk ${cls}" onclick="setRgStatus(${r.id},'${next[r.status]}')">${lbl}</button>
+              ${r.status==='approved'&&!r.paid?`<button class="btn-green" onclick="markPaid(${r.id})">Marcar pago</button>`:''}
+              <button class="btn-del" onclick="delRegear(${r.id})">Remover</button>
+            `:`<span class="stbadge ${cls}">${lbl}</span>`}
           </div>
         </div></div>`;
     });
@@ -579,133 +759,172 @@ async function loadRegearList(){
   }catch(e){}
 }
 async function setRgStatus(id,status){try{await api('PATCH',`/api/regear/${id}/status`,{status});loadRegearList();}catch(e){}}
+async function markPaid(id){try{await api('PATCH',`/api/regear/${id}/paid`,{paid:true});loadRegearList();loadShopping();}catch(e){}}
 async function delRegear(id){try{await api('DELETE',`/api/regear/${id}`);loadRegearList();}catch(e){}}
 
-// ── Stats + Gráficos ──────────────────────────────────────────────────────────
-const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#e03a3a','#9b59b6','#1abc9c','#e67e22','#e91e63'];
+// ── COMPRAS ───────────────────────────────────────────────────────────────────
+async function loadShopping(){
+  const from=document.getElementById('shop-from').value,to=document.getElementById('shop-to').value;
+  try{
+    const data=await api('GET',`/api/shopping?from=${from}&to=${to}`);
+    if(!Object.keys(data).length){
+      document.getElementById('shopping-content').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhuma compra pendente no período.</p>';
+      return;
+    }
+    let html='';
+    Object.entries(data).forEach(([build,items])=>{
+      const total=Object.values(items).reduce((s,v)=>s+v,0);
+      if(total===0)return;
+      html+=`<div class="shop-build">
+        <div class="shop-build-title">${build}</div>
+        <div class="shop-items">`;
+      Object.entries(items).forEach(([item,qty])=>{
+        if(qty===0)return;
+        html+=`<div class="shop-item">
+          <span class="shop-item-name">${item}</span>
+          <span class="shop-item-qty">×${qty}</span>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    });
+    document.getElementById('shopping-content').innerHTML=html||'<p style="color:var(--text2);font-size:13px">Nenhuma compra pendente.</p>';
+  }catch(e){document.getElementById('shopping-content').innerHTML='<p style="color:var(--red);font-size:13px">Erro ao carregar.</p>';}
+}
 
+// ── MEMBROS ───────────────────────────────────────────────────────────────────
+async function saveMember(){
+  const nick=document.getElementById('mb-nick').value;
+  const joined_at=document.getElementById('mb-joined').value;
+  const notes=document.getElementById('mb-notes').value;
+  if(!nick||!joined_at){flashErr('mb-err','Nick e data obrigatórios.');return;}
+  try{
+    await api('POST','/api/members',{nick,joined_at,notes});
+    membersCache=await api('GET','/api/members');
+    document.getElementById('mb-notes').value='';
+    flash('mb-ok');loadMembers();
+  }catch(e){flashErr('mb-err',e.message);}
+}
+async function loadMembers(){
+  const showInactive=document.getElementById('show-inactive')?.checked;
+  try{
+    membersCache=await api('GET','/api/members');
+    const list=showInactive?membersCache:membersCache.filter(m=>m.active);
+    if(!list.length){document.getElementById('members-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum membro cadastrado.</p>';return;}
+    let html='';
+    list.forEach(m=>{
+      const joined=m.joined_at?m.joined_at.split('T')[0]:'-';
+      const left=m.left_at?m.left_at.split('T')[0]:null;
+      html+=`<div class="member-row ${m.active?'':'inactive'}">
+        <div class="member-nick">${m.nick}${!m.active?'<span style="font-size:9px;color:var(--text2);margin-left:6px">[inativo]</span>':''}</div>
+        <div class="member-dates">Entrou: ${joined}${left?' · Saiu: '+left:''}</div>
+        <div class="member-notes">${m.notes||''}</div>
+        <div class="flex gap8">
+          ${m.active?`<button class="btn-del" onclick="openDeactivate('${m.nick}')">Marcar saída</button>`:`<button class="btn-green" onclick="reactivate('${m.nick}')">Reativar</button>`}
+          <button class="btn-del" onclick="deleteMember('${m.nick}')">×</button>
+        </div>
+      </div>`;
+    });
+    document.getElementById('members-list').innerHTML=html;
+  }catch(e){}
+}
+function openDeactivate(nick){
+  deactNick=nick;
+  document.getElementById('deact-nick').textContent=nick;
+  document.getElementById('deact-date').value=today();
+  document.getElementById('modal-deactivate').classList.add('open');
+}
+async function confirmDeactivate(){
+  const left_at=document.getElementById('deact-date').value;
+  try{
+    await api('PATCH',`/api/members/${deactNick}`,{active:false,left_at});
+    membersCache=await api('GET','/api/members');
+    document.getElementById('modal-deactivate').classList.remove('open');
+    loadMembers();renderPlayerList();
+  }catch(e){}
+}
+async function reactivate(nick){
+  try{await api('PATCH',`/api/members/${nick}`,{active:true,left_at:null});membersCache=await api('GET','/api/members');loadMembers();renderPlayerList();}catch(e){}
+}
+async function deleteMember(nick){
+  if(!confirm(`Deletar registro de ${nick}?`))return;
+  try{await api('DELETE',`/api/members/${nick}`);membersCache=await api('GET','/api/members');loadMembers();}catch(e){}
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
 async function loadStats(){
   if(!isAdmin())return;
-  const from=document.getElementById('st-from').value;
-  const to=document.getElementById('st-to').value;
+  const from=document.getElementById('st-from').value,to=document.getElementById('st-to').value;
   try{
-    const d=await api('GET',`/api/stats?from=${from}&to=${to}`);
-    statsCache=d;
-
-    const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total),0);
-    const rgPending=(d.regear.find(r=>r.status==='pending')?.cnt)||0;
+    const d=await api('GET',`/api/stats?from=${from}&to=${to}`);statsCache=d;
+    const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
+    const rgPending=parseInt(d.regear.find(r=>r.status==='pending')?.cnt||0);
     document.getElementById('stats-sum').innerHTML=`
       <div class="scard"><div class="snum">${d.totalCTAs}</div><div class="slbl">CTAs registradas</div></div>
       <div class="scard"><div class="snum">${totalKills}</div><div class="slbl">Kills totais</div></div>
       <div class="scard"><div class="snum">${rgPending}</div><div class="slbl">Re-gears pendentes</div></div>`;
 
-    // Attendance table
+    const kbp=d.killsByPlayer||d.kills;
+    const top6=kbp.slice(0,6),outros=kbp.slice(6).reduce((s,k)=>s+parseInt(k.total||0),0);
+    const kL=top6.map(k=>k.player),kD=top6.map(k=>parseInt(k.total||0));
+    if(outros>0){kL.push('Outros');kD.push(outros);}
+    document.getElementById('leg-kills').innerHTML=kL.map((l,i)=>`<span><span class="legend-dot" style="background:${PIZZA_COLORS[i]}"></span>${l} ${kD[i]}</span>`).join('');
+    destroyChart('killsGuild');
+    charts.killsGuild=new Chart(document.getElementById('chart-kills-guild'),{type:'doughnut',data:{labels:kL,datasets:[{data:kD,backgroundColor:PIZZA_COLORS.slice(0,kL.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}});
+
+    const totalSlots=d.totalCTAs*PLAYERS.length;
+    let tp=0,ta=0;d.attendance.forEach(r=>{if(r.status==='present')tp+=parseInt(r.cnt||0);else ta+=parseInt(r.cnt||0);});
+    const sr=Math.max(0,totalSlots-tp-ta);
+    destroyChart('attGuild');
+    charts.attGuild=new Chart(document.getElementById('chart-att-guild'),{type:'doughnut',data:{labels:['Presentes','Ausentes','Sem registro'],datasets:[{data:[tp,ta,sr],backgroundColor:['#2ecc71','#e03a3a','#2a2e3a'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}});
+
+    const rgA=parseInt(d.regear.find(r=>r.status==='approved')?.cnt||0),rgD=parseInt(d.regear.find(r=>r.status==='denied')?.cnt||0);
+    destroyChart('rgGuild');
+    charts.rgGuild=new Chart(document.getElementById('chart-rg-guild'),{type:'doughnut',data:{labels:['Aprovados','Negados','Pendentes'],datasets:[{data:[rgA,rgD,rgPending],backgroundColor:['#2ecc71','#e03a3a','#c9a227'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}});
+
     const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});
-    d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt);});
+    d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt||0);});
     const sorted=[...PLAYERS].sort((a,b)=>pMap[b].present-pMap[a].present);
     let tHtml='<table><thead><tr><th>#</th><th>Player</th><th>Presentes</th><th>Ausentes</th><th>% Presença</th></tr></thead><tbody>';
     sorted.forEach((p,i)=>{
-      const s=pMap[p];const total=s.present+s.absent;
-      const pct=total>0?Math.round(s.present/total*100):0;
+      const s=pMap[p];const total=s.present+s.absent;const pct=total>0?Math.round(s.present/total*100):0;
       const cls=pct>=70?'bg':pct>=40?'ba2':'br';
-      tHtml+=`<tr><td style="color:var(--text2);font-size:12px">${i+1}</td>
-        <td style="font-family:var(--mono);font-size:12px">${p}</td>
-        <td><span class="badge bg">${s.present}</span></td>
-        <td><span class="badge br">${s.absent}</span></td>
-        <td><span class="badge ${cls}">${pct}%</span></td></tr>`;
+      tHtml+=`<tr><td style="color:var(--text2);font-size:12px">${i+1}</td><td style="font-family:var(--mono);font-size:12px">${p}</td><td><span class="badge bg">${s.present}</span></td><td><span class="badge br">${s.absent}</span></td><td><span class="badge ${cls}">${pct}%</span></td></tr>`;
     });tHtml+='</tbody></table>';
     document.getElementById('stats-att').innerHTML=tHtml;
 
-    // Kills ranking
-    const kMap={};PLAYERS.forEach(p=>{kMap[p]=0;});
-    d.kills.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total);});
+    const kMap={};PLAYERS.forEach(p=>{kMap[p]=0;});d.kills.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total||0);});
     const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);
     let kHtml='<div class="kgrid">';
     kSorted.forEach(p=>{const n=kMap[p];kHtml+=`<div class="kcard ${n>0?'has':''}"><div class="knum">${n}</div><div class="kname">${p}</div></div>`;});
     kHtml+='</div>';document.getElementById('stats-kills').innerHTML=kHtml;
-
-    // Re-gear summary
-    const rgA=(d.regear.find(r=>r.status==='approved')?.cnt)||0;
-    const rgD=(d.regear.find(r=>r.status==='denied')?.cnt)||0;
-    document.getElementById('stats-rg').innerHTML=`<div class="flex gap8 wrap">
-      <span class="badge ba2">Pendentes: ${rgPending}</span>
-      <span class="badge bg">Aprovados: ${rgA}</span>
-      <span class="badge br">Negados: ${rgD}</span></div>`;
-
-    renderPizzaCharts();
+    document.getElementById('stats-rg').innerHTML=`<div class="flex gap8 wrap"><span class="badge ba2">Pendentes: ${rgPending}</span><span class="badge bg">Aprovados: ${rgA}</span><span class="badge br">Negados: ${rgD}</span></div>`;
+    renderRadar();
   }catch(e){console.error(e);}
 }
-
-function renderPizzaCharts(){
+function renderRadar(){
   if(!statsCache)return;
-  const player=document.getElementById('pizza-player').value;
-  const d=statsCache;
-
-  // Attendance pizza
-  const attP=d.attendance.find(r=>r.player===player&&r.status==='present');
-  const attA=d.attendance.find(r=>r.player===player&&r.status==='absent');
-  const attPresent=parseInt(attP?.cnt||0);
-  const attAbsent=parseInt(attA?.cnt||0);
-  const attTotal=attPresent+attAbsent;
-
-  destroyChart('chartAtt');
-  chartAtt=new Chart(document.getElementById('chart-att'),{
-    type:'doughnut',
-    data:{
-      labels:['Presente','Ausente','Sem registro'],
-      datasets:[{data:[attPresent,attAbsent,Math.max(0,d.totalCTAs-attTotal)],backgroundColor:['#2ecc71','#e03a3a','#2a2e3a'],borderWidth:0}]
-    },
-    options:{plugins:{legend:{labels:{color:'#d4cfc5',font:{family:'Rajdhani',size:12}}}},cutout:'60%'}
-  });
-
-  // Kills pizza - total kills do player vs resto do guild
-  const myKills=parseInt(d.kills.find(k=>k.player===player)?.total||0);
-  const otherKills=d.kills.filter(k=>k.player!==player).reduce((s,k)=>s+parseInt(k.total),0);
-  destroyChart('chartKills');
-  chartKills=new Chart(document.getElementById('chart-kills'),{
-    type:'doughnut',
-    data:{
-      labels:[player,'Resto do guild'],
-      datasets:[{data:[myKills,otherKills||0],backgroundColor:['#c9a227','#2a2e3a'],borderWidth:0}]
-    },
-    options:{plugins:{legend:{labels:{color:'#d4cfc5',font:{family:'Rajdhani',size:12}}}},cutout:'60%'}
-  });
-
-  // Re-gear pizza
-  const myRg=d.regearByPlayer?.find(r=>r.player===player)?.cnt||0;
-  const rgApproved=d.regear.find(r=>r.status==='approved')?.cnt||0;
-  const rgDenied=d.regear.find(r=>r.status==='denied')?.cnt||0;
-  const rgPending=d.regear.find(r=>r.status==='pending')?.cnt||0;
-  destroyChart('chartRg');
-  chartRg=new Chart(document.getElementById('chart-rg'),{
-    type:'doughnut',
-    data:{
-      labels:['Aprovados','Negados','Pendentes'],
-      datasets:[{data:[parseInt(rgApproved),parseInt(rgDenied),parseInt(rgPending)],backgroundColor:['#2ecc71','#e03a3a','#c9a227'],borderWidth:0}]
-    },
-    options:{plugins:{legend:{labels:{color:'#d4cfc5',font:{family:'Rajdhani',size:12}}}},cutout:'60%'}
-  });
+  const player=document.getElementById('radar-player').value,d=statsCache;
+  const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});
+  d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt||0);});
+  const s=pMap[player]||{present:0,absent:0};const total=s.present+s.absent;
+  const pct=total>0?Math.round(s.present/total*100):0;
+  const kills=parseInt(d.kills.find(k=>k.player===player)?.total||0);
+  const totalKills=d.kills.reduce((sum,k)=>sum+parseInt(k.total||0),0);
+  const killsPct=totalKills>0?Math.round(kills/totalKills*100):0;
+  const myRg=parseInt(d.regearByPlayer?.find(r=>r.player===player)?.cnt||0);
+  const rgA=parseInt(d.regear.find(r=>r.status==='approved')?.cnt||0);
+  const consistencia=total>0?Math.round((1-(s.absent/Math.max(total,1)))*100):0;
+  const vals=[pct,Math.min(killsPct*3,100),Math.min(myRg*20,100),d.totalCTAs>0?pct:0,consistencia];
+  const labels=['Presença','Kills','Re-gears','Participação','Consistência'];
+  destroyChart('radar');
+  charts.radar=new Chart(document.getElementById('chart-radar'),{type:'radar',data:{labels,datasets:[{label:player,data:vals,backgroundColor:'rgba(201,162,39,0.12)',borderColor:'#c9a227',pointBackgroundColor:'#c9a227',borderWidth:2,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,0.07)'},angleLines:{color:'rgba(255,255,255,0.07)'},pointLabels:{color:'#8a8578',font:{size:11}}}},plugins:{legend:{display:false}}}});
+  const metrics=[{label:'Presença',val:pct+'%'},{label:'Kills',val:kills},{label:'Re-gears',val:myRg},{label:'Aprovação',val:rgA+'%'},{label:'Consistência',val:consistencia+'%'}];
+  document.getElementById('radar-cards').innerHTML=metrics.map(m=>`<div class="scard"><div class="snum" style="font-size:20px">${m.val}</div><div class="slbl">${m.label}</div></div>`).join('');
 }
-
-function destroyChart(name){
-  if(window[name]){window[name].destroy();window[name]=null;}
-}
-
-function clearStFilter(){
-  const t=today();
-  document.getElementById('st-from').value=t;
-  document.getElementById('st-to').value=t;
-  loadStats();
-}
-
-function exportCSV(){
-  const link=document.createElement('a');
-  link.href=`/api/export/csv?_admin=${encodeURIComponent(session.adminPass||'')}`;link.click();
-}
-async function clearAllData(){
-  try{await api('DELETE','/api/data/all');}catch(e){}
-  closeModal();loadStats();loadKillsTable();loadRegearList();loadAttendanceCounts();
-}
+function destroyChart(name){if(charts[name]){charts[name].destroy();charts[name]=null;}}
+function clearStFilter(){const t=today();document.getElementById('st-from').value=t;document.getElementById('st-to').value=t;loadStats();}
+function exportCSV(){const a=document.createElement('a');a.href=`/api/export/csv?_admin=${encodeURIComponent(session.adminPass||'')}`;a.click();}
+async function clearAllData(){try{await api('DELETE','/api/data/all');}catch(e){}closeModal();loadStats();loadKillsTable();loadRegearList();loadAttendanceCounts();}
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function showPage(p,btn){
@@ -716,12 +935,12 @@ function showPage(p,btn){
   if(p==='stats')loadStats();
   if(p==='kills')loadKillsTable();
   if(p==='regear')loadRegearList();
+  if(p==='members')loadMembers();
+  if(p==='shopping')loadShopping();
 }
 function handleImg(e,previewId,slot){
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{imgs[slot]=ev.target.result;const img=document.getElementById(previewId);img.src=ev.target.result;img.style.display='block';};
-  r.readAsDataURL(f);
+  const r=new FileReader();r.onload=ev=>{imgs[slot]=ev.target.result;const img=document.getElementById(previewId);img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);
 }
 function flash(id){const el=document.getElementById(id);el.style.display='block';setTimeout(()=>el.style.display='none',2200);}
 function flashErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
@@ -729,7 +948,6 @@ function viewImg(src){const w=window.open();w.document.write(`<img src="${src}" 
 function confirmClear(){document.getElementById('modal-confirm').classList.add('open');}
 function closeModal(){document.getElementById('modal-confirm').classList.remove('open');}
 
-// Init nick dropdown
 document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
 </script>
 </body>
