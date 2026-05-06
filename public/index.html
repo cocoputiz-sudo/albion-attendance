@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bomb Attendance Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0c10;--bg2:#111318;--bg3:#181c24;
+    --gold:#c9a227;--gold2:#e8c04a;--red:#e03a3a;--green:#2ecc71;--blue:#3b8beb;
+    --text:#d4cfc5;--text2:#8a8578;--border:#2a2e3a;
+    --font:'Rajdhani',sans-serif;--mono:'Share Tech Mono',monospace;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;min-height:100vh}
+  h1{font-size:22px;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase}
+  h2{font-size:17px;font-weight:600;color:var(--gold2);letter-spacing:1px}
+  .app{max-width:920px;margin:0 auto;padding:16px}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;border-bottom:1px solid var(--border)}
+  .header-left{display:flex;align-items:center;gap:16px}
+  .logo{width:44px;height:44px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .subtitle{font-size:13px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+  .user-badge{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 14px}
+  .ub-name{font-family:var(--mono);font-size:12px;color:var(--gold2)}
+  .ub-role{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+  .login-wrap{display:flex;align-items:center;justify-content:center;min-height:78vh}
+  .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:32px;width:340px}
+  .lf{margin-bottom:14px}
+  .lf label{display:block;font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .lf select,.lf input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px}
+  .lf select:focus,.lf input:focus{outline:none;border-color:var(--gold)}
+  .err{font-size:12px;color:var(--red);margin:6px 0;display:none}
+  .nav{display:flex;gap:4px;margin:16px 0;border-bottom:1px solid var(--border)}
+  .nav-btn{padding:8px 18px;background:none;border:none;color:var(--text2);font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.5px;transition:all .15s}
+  .nav-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+  .nav-btn:hover:not(.active){color:var(--text)}
+  .page{display:none}.page.active{display:block}
+  .cta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;margin:16px 0}
+  .cta-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .15s;position:relative}
+  .cta-card:hover{border-color:var(--gold);background:var(--bg3)}
+  .cta-card.selected{border-color:var(--gold);background:var(--bg3);box-shadow:0 0 0 1px var(--gold)}
+  .cta-time{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--gold2)}
+  .cta-lbl{font-size:11px;color:var(--text2);margin-top:2px;letter-spacing:.5px}
+  .cta-cnt{position:absolute;top:10px;right:12px;font-size:11px;font-family:var(--mono);color:var(--text2)}
+  .dr{display:flex;align-items:center;gap:12px;margin:8px 0}
+  .dr label{font-size:13px;color:var(--text2);min-width:60px}
+  .dr input,.dr select,.fi input,.fi select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:13px}
+  .dr input:focus,.dr select:focus,.fi input:focus,.fi select:focus{outline:none;border-color:var(--gold)}
+  .fi{margin-bottom:12px}
+  .fi label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .fi input,.fi select{width:100%;max-width:320px}
+  .player-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:16px 0}
+  .player-row{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;transition:border-color .1s}
+  .player-row.present{border-color:var(--green)}
+  .player-row.absent{border-color:var(--red);opacity:.6}
+  .player-row.self-row{border-color:var(--blue)}
+  .pname{font-family:var(--mono);font-size:13px}
+  .tbtn{display:flex;gap:4px}
+  .bp{background:none;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--text2);transition:all .1s}
+  .bp.on{background:var(--green);border-color:var(--green);color:#fff}
+  .ba.on{background:var(--red);border-color:var(--red);color:#fff}
+  .bp:disabled{opacity:.25;cursor:not-allowed}
+  .sec{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0}
+  .sec-title{font-size:11px;color:var(--text2);margin-bottom:12px;letter-spacing:.5px;text-transform:uppercase;font-weight:500}
+  .upl{border:1px dashed var(--border);border-radius:6px;padding:20px;text-align:center;cursor:pointer;position:relative;background:var(--bg3);transition:border-color .15s}
+  .upl:hover{border-color:var(--gold)}
+  .upl input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .upl p{font-size:12px;color:var(--text2)}
+  .upl-prev{max-width:100%;max-height:120px;border-radius:4px;margin-top:8px;display:none}
+  .btn{padding:8px 20px;border-radius:6px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:all .15s;border:none}
+  .btn-gold{background:var(--gold);color:#0a0c10}.btn-gold:hover{background:var(--gold2)}.btn-gold:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ol{background:none;border:1px solid var(--border);color:var(--text);padding:7px 16px}
+  .btn-ol:hover{border-color:var(--gold);color:var(--gold)}
+  .btn-del{background:var(--red);color:#fff;padding:4px 10px;font-size:12px;border-radius:4px;border:none;cursor:pointer}
+  .btn-sm{padding:5px 12px;font-size:12px}
+  .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:12px 0}
+  .scard{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
+  .snum{font-size:26px;font-weight:700;font-family:var(--mono);color:var(--gold2)}
+  .slbl{font-size:11px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+  .tw{overflow-x:auto;margin:10px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 12px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);font-weight:500}
+  td{padding:8px 12px;border-bottom:1px solid var(--border)}
+  tr:hover td{background:var(--bg3)}
+  .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-family:var(--mono)}
+  .bg{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3)}
+  .br{background:rgba(224,58,58,.15);color:var(--red);border:1px solid rgba(224,58,58,.3)}
+  .ba2{background:rgba(201,162,39,.15);color:var(--gold2);border:1px solid rgba(201,162,39,.3)}
+  .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:8px;margin:10px 0}
+  .kcard{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center}
+  .knum{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--gold2)}
+  .kname{font-size:10px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
+  .kcard.has{border-color:var(--gold)}
+  .rg-item{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;margin:8px 0;display:flex;gap:12px;align-items:flex-start}
+  .rg-info{flex:1}.rg-nick{font-family:var(--mono);font-size:13px;color:var(--gold2)}
+  .rg-meta{font-size:12px;color:var(--text2);margin-top:4px}
+  .stbadge{padding:3px 10px;border-radius:4px;font-size:11px;font-family:var(--mono)}
+  .stbadge.clk{cursor:pointer;border:none}.stbadge.clk:hover{opacity:.8}
+  .st-p{background:rgba(201,162,39,.15);color:var(--gold2);border:1px solid rgba(201,162,39,.3)}
+  .st-a{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3)}
+  .st-d{background:rgba(224,58,58,.15);color:var(--red);border:1px solid rgba(224,58,58,.3)}
+  .alert{padding:10px 14px;border-radius:6px;font-size:13px;margin:8px 0}
+  .alert-s{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);color:var(--green);display:none}
+  .alert-i{background:rgba(59,139,235,.1);border:1px solid rgba(59,139,235,.3);color:var(--blue)}
+  .alert-e{background:rgba(224,58,58,.1);border:1px solid rgba(224,58,58,.3);color:var(--red);display:none}
+  .pinfo{background:rgba(59,139,235,.08);border:1px solid rgba(59,139,235,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--blue);margin:12px 0;display:none}
+  .sp{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:5px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .flex{display:flex}.gap8{gap:8px}.gap12{gap:12px}.mt12{margin-top:12px}
+  .aic{align-items:center}.jb{justify-content:space-between}.wrap{flex-wrap:wrap}
+  .modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center}
+  .modal-ov.open{display:flex}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:480px;width:90%}
+  .modal h2{margin-bottom:14px}
+  .xbtn{float:right;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div id="login-screen">
+  <div style="display:flex;align-items:center;gap:16px;padding:20px 0 28px;border-bottom:1px solid var(--border);margin-bottom:36px">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0a0c10" stroke-width="2.5">
+        <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/>
+        <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+        <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/>
+        <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/>
+        <path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/>
+        <path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/>
+        <path d="M8.5 15H7v-1.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+      </svg>
+    </div>
+    <div><h1>Bomb Attendance Tracker</h1><div class="subtitle">ALBION ONLINE · GUILD CTA MANAGER</div></div>
+  </div>
+  <div class="login-wrap" style="margin-top:-36px">
+    <div class="login-box">
+      <h2>Entrar</h2>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:24px;font-family:var(--mono)">guild attendance system</div>
+      <div class="lf">
+        <label>Tipo de acesso</label>
+        <select id="login-type" onchange="toggleLoginType()">
+          <option value="player">Player</option>
+          <option value="admin">Admin / Officer</option>
+        </select>
+      </div>
+      <div class="lf" id="field-nick">
+        <label>Seu nick</label>
+        <select id="login-nick"></select>
+      </div>
+      <div class="lf" id="field-pass" style="display:none">
+        <label>Senha admin</label>
+        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="err" id="login-err"></div>
+      <button class="btn btn-gold" style="width:100%;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="main-screen" style="display:none">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0a0c10" stroke-width="2.5">
+          <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/>
+          <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+          <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/>
+          <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/>
+          <path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/>
+          <path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/>
+          <path d="M8.5 15H7v-1.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+        </svg>
+      </div>
+      <div><h1>Bomb Attendance Tracker</h1><div class="subtitle">ALBION ONLINE · GUILD CTA MANAGER</div></div>
+    </div>
+    <div class="user-badge">
+      <div><div class="ub-name" id="badge-name"></div><div class="ub-role" id="badge-role"></div></div>
+      <button class="btn btn-ol btn-sm" style="margin-left:8px" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('attendance',this)">Attendance</button>
+    <button class="nav-btn" onclick="showPage('kills',this)">Kills</button>
+    <button class="nav-btn" onclick="showPage('regear',this)">Re-Gear</button>
+    <button class="nav-btn" id="stats-tab" style="display:none" onclick="showPage('stats',this)">Estatísticas</button>
+  </div>
+
+  <!-- ATTENDANCE -->
+  <div id="page-attendance" class="page active">
+    <h2>Registrar Presença</h2>
+    <div class="dr" style="margin-top:14px">
+      <label>Data</label><input type="date" id="att-date" onchange="onDateChange()">
+    </div>
+    <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 4px">Selecione a CTA</div>
+    <div class="cta-grid">
+      <div class="cta-card" onclick="selectCTA('15:30 UTC')" id="cta-1530"><div class="cta-time">15:30 UTC</div><div class="cta-lbl">CTA 1 · TARDE</div><div class="cta-cnt" id="cnt-1530">— presentes</div></div>
+      <div class="cta-card" onclick="selectCTA('17:10 UTC')" id="cta-1710"><div class="cta-time">17:10 UTC</div><div class="cta-lbl">CTA 2 · TARDE</div><div class="cta-cnt" id="cnt-1710">— presentes</div></div>
+      <div class="cta-card" onclick="selectCTA('19:10 UTC')" id="cta-1910"><div class="cta-time">19:10 UTC</div><div class="cta-lbl">CTA 3 · NOITE</div><div class="cta-cnt" id="cnt-1910">— presentes</div></div>
+      <div class="cta-card" onclick="selectCTA('23:10 UTC')" id="cta-2310"><div class="cta-time">23:10 UTC</div><div class="cta-lbl">CTA 4 · NOITE</div><div class="cta-cnt" id="cnt-2310">— presentes</div></div>
+    </div>
+    <div class="sec" id="att-section" style="display:none">
+      <div class="flex aic jb gap8">
+        <div class="sec-title" style="margin:0">Presença · <span id="att-cta-lbl" style="color:var(--gold2)"></span></div>
+        <div class="flex gap8" id="mark-all-btns" style="display:none">
+          <button class="btn btn-ol btn-sm" onclick="markAll(true)">Todos presentes</button>
+          <button class="btn btn-ol btn-sm" onclick="markAll(false)">Limpar todos</button>
+        </div>
+      </div>
+      <div class="pinfo" id="pinfo">Você só pode marcar sua própria presença.</div>
+      <div class="sec" style="margin-top:12px">
+        <div class="sec-title">Print da CTA (opcional)</div>
+        <div class="upl"><input type="file" accept="image/*" onchange="handleImg(event,'cta-prev',0)"><p>Clique ou arraste aqui</p><img id="cta-prev" class="upl-prev"></div>
+      </div>
+      <div class="player-list" id="player-list"></div>
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:center">
+        <button class="btn btn-gold" id="att-save-btn" onclick="saveAttendance()">Salvar</button>
+        <div class="alert alert-s" id="att-ok" style="margin:0">Salvo!</div>
+        <div class="alert alert-e" id="att-err" style="margin:0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KILLS -->
+  <div id="page-kills" class="page">
+    <h2>Registrar Kills</h2>
+    <div style="margin-top:14px">
+      <div class="fi"><label>Data</label><input type="date" id="kill-date"></div>
+      <div class="fi"><label>CTA</label><select id="kill-cta"><option>15:30 UTC</option><option>17:10 UTC</option><option>19:10 UTC</option><option>23:10 UTC</option></select></div>
+      <div class="fi" id="kill-player-fi" style="display:none"><label>Player</label><select id="kill-player"></select></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Número de kills</div>
+      <div class="flex aic gap12">
+        <input type="number" id="kill-count" min="0" value="0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--gold2);font-family:var(--mono);font-size:24px;width:100px;text-align:center">
+        <span style="font-size:12px;color:var(--text2)">kills nesta CTA</span>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Print do kill feed / fame</div>
+      <div class="upl"><input type="file" accept="image/*" onchange="handleImg(event,'kill-prev',1)"><p>Clique ou arraste aqui</p><img id="kill-prev" class="upl-prev"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-gold" onclick="saveKill()">Registrar</button>
+      <div class="alert alert-s" id="kill-ok" style="margin:0">Registrado!</div>
+      <div class="alert alert-e" id="kill-err" style="margin:0"></div>
+    </div>
+    <div class="sec" style="margin-top:20px"><div class="sec-title">Histórico</div><div id="kills-table"></div></div>
+  </div>
+
+  <!-- REGEAR -->
+  <div id="page-regear" class="page">
+    <h2>Pedido de Re-Gear</h2>
+    <div class="alert alert-i" style="margin:12px 0">Anexe o print da morte. O officer aprova ou nega.</div>
+    <div class="fi"><label>Data</label><input type="date" id="rg-date"></div>
+    <div class="fi"><label>CTA</label><select id="rg-cta"><option>15:30 UTC</option><option>17:10 UTC</option><option>19:10 UTC</option><option>23:10 UTC</option></select></div>
+    <div class="fi" id="rg-player-fi" style="display:none"><label>Player</label><select id="rg-player"></select></div>
+    <div class="sec">
+      <div class="sec-title">Print da morte (obrigatório)</div>
+      <div class="upl"><input type="file" accept="image/*" onchange="handleImg(event,'rg-prev',2)"><p>Clique ou arraste o print da sua morte</p><img id="rg-prev" class="upl-prev"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Observação (opcional)</div>
+      <textarea id="rg-note" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical;min-height:60px" placeholder="Ex: morri no bomb principal..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-gold" onclick="saveRegear()">Enviar pedido</button>
+      <div class="alert alert-s" id="rg-ok" style="margin:0">Enviado!</div>
+      <div class="alert alert-e" id="rg-err" style="margin:0"></div>
+    </div>
+    <div class="sec" style="margin-top:20px"><div class="sec-title" id="rg-list-title">Meus pedidos</div><div id="regear-list"></div></div>
+  </div>
+
+  <!-- STATS (admin) -->
+  <div id="page-stats" class="page">
+    <h2>Estatísticas</h2>
+    <div class="flex aic gap8 mt12 wrap">
+      <div class="dr" style="margin:0"><label>De</label><input type="date" id="st-from" style="width:135px"></div>
+      <div class="dr" style="margin:0"><label>Até</label><input type="date" id="st-to" style="width:135px"></div>
+      <button class="btn btn-ol btn-sm" onclick="loadStats()">Filtrar</button>
+      <button class="btn btn-ol btn-sm" onclick="clearStFilter()">Limpar</button>
+      <button class="btn btn-ol btn-sm" onclick="exportCSV()">Exportar CSV</button>
+    </div>
+    <div class="sgrid" id="stats-sum" style="margin-top:16px"></div>
+    <div class="sec mt12"><div class="sec-title">Attendance por player</div><div class="tw" id="stats-att"></div></div>
+    <div class="sec"><div class="sec-title">Ranking de kills</div><div id="stats-kills"></div></div>
+    <div class="sec"><div class="sec-title">Re-gear</div><div id="stats-rg"></div></div>
+    <div style="margin-top:20px">
+      <button class="btn btn-del" style="font-size:13px;padding:7px 16px" onclick="confirmClear()">Limpar todos os dados</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal">
+    <button class="xbtn" onclick="closeModal()">×</button>
+    <h2>Confirmar limpeza</h2>
+    <p style="margin:12px 0;font-size:13px;color:var(--text2)">Isso vai apagar TODOS os dados do banco. Tem certeza?</p>
+    <div class="flex gap8 mt12">
+      <button class="btn btn-del" style="padding:7px 18px;font-size:13px" onclick="clearAllData()">Apagar tudo</button>
+      <button class="btn btn-ol" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETE','GAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
+let session={role:null,nick:null,adminPass:null};
+let selectedCTA=null;
+let imgs=[null,null,null];
+let attData={};
+const isAdmin=()=>session.role==='admin';
+const today=()=>new Date().toISOString().split('T')[0];
+function authHeaders(){const h={'Content-Type':'application/json'};if(isAdmin())h['x-admin-pass']=session.adminPass;else if(session.nick)h['x-player-nick']=session.nick;return h;}
+async function api(method,path,body){const opts={method,headers:authHeaders()};if(body)opts.body=JSON.stringify(body);const r=await fetch(path,opts);const data=await r.json();if(!r.ok)throw new Error(data.error||'Erro desconhecido');return data;}
+function toggleLoginType(){const t=document.getElementById('login-type').value;document.getElementById('field-nick').style.display=t==='player'?'block':'none';document.getElementById('field-pass').style.display=t==='admin'?'block':'none';}
+async function doLogin(){
+  const type=document.getElementById('login-type').value;
+  const nick=document.getElementById('login-nick').value;
+  const password=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-err');
+  const btn=document.getElementById('login-btn');
+  errEl.style.display='none';btn.innerHTML='<span class="sp"></span>Entrando...';btn.disabled=true;
+  try{
+    const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,nick,password})});
+    const data=await res.json();if(!res.ok)throw new Error(data.error);
+    session={role:data.role,nick:data.nick,adminPass:password};initApp();
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+  finally{btn.innerHTML='Entrar';btn.disabled=false;}
+}
+function logout(){session={role:null,nick:null,adminPass:null};selectedCTA=null;attData={};imgs=[null,null,null];document.getElementById('login-pass').value='';document.getElementById('login-err').style.display='none';document.getElementById('main-screen').style.display='none';document.getElementById('login-screen').style.display='block';document.getElementById('att-section').style.display='none';document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));}
+function initApp(){
+  document.getElementById('login-screen').style.display='none';document.getElementById('main-screen').style.display='block';
+  document.getElementById('badge-name').textContent=session.nick;document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
+  document.getElementById('stats-tab').style.display=isAdmin()?'':'none';document.getElementById('mark-all-btns').style.display=isAdmin()?'flex':'none';
+  document.getElementById('pinfo').style.display=isAdmin()?'none':'block';document.getElementById('kill-player-fi').style.display=isAdmin()?'block':'none';
+  document.getElementById('rg-player-fi').style.display=isAdmin()?'block':'none';document.getElementById('rg-list-title').textContent=isAdmin()?'Todos os pedidos':'Meus pedidos';
+  if(isAdmin()){['kill-player','rg-player'].forEach(id=>{document.getElementById(id).innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');});}
+  const t=today();['att-date','kill-date','rg-date','st-from','st-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
+  loadAttendanceCounts();loadKillsTable();loadRegearList();if(isAdmin())loadStats();
+}
+async function loadAttendanceCounts(){
+  const date=document.getElementById('att-date').value;
+  try{attData=await api('GET',`/api/attendance?date=${date}`);}catch(e){attData={};}
+  ['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'].forEach(cta=>{const key=cta.replace(':','').replace(' UTC','');const cnt=attData[cta]?attData[cta].present.length:0;document.getElementById('cnt-'+key).textContent=cnt+' presentes';});
+  if(selectedCTA)renderPlayerList();
+}
+function onDateChange(){loadAttendanceCounts();}
+function selectCTA(cta){selectedCTA=cta;document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));const key=cta.replace(':','').replace(' UTC','');document.getElementById('cta-'+key).classList.add('selected');document.getElementById('att-section').style.display='block';document.getElementById('att-cta-lbl').textContent=cta;renderPlayerList();}
+function renderPlayerList(){
+  const data=attData[selectedCTA]||{present:[],absent:[]};
+  const html=PLAYERS.map(p=>{const isP=data.present.includes(p);const isA=data.absent.includes(p);const isSelf=p===session.nick;const canToggle=isAdmin()||isSelf;const selfCls=isSelf&&!isAdmin()?'self-row':'';const dis=canToggle?'':'disabled';
+    return`<div class="player-row ${isP?'present':isA?'absent':''} ${selfCls}" id="pr-${p}"><span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}</span><div class="tbtn"><button class="bp ${isP?'on':''}" onclick="${canToggle?`tgl('${p}',true)`:''}" ${dis}>✓</button><button class="bp ba ${isA?'on':''}" onclick="${canToggle?`tgl('${p}',false)`:''}" ${dis}>✗</button></div></div>`;
+  }).join('');
+  document.getElementById('player-list').innerHTML=html;
+}
+function tgl(name,present){const row=document.getElementById('pr-'+name);const btns=row.querySelectorAll('.bp');const isSelf=name===session.nick&&!isAdmin();row.className=`player-row ${present?'present':'absent'}${isSelf?' self-row':''}`;btns[0].className='bp'+(present?' on':'');btns[1].className='bp ba'+(present?'':' on');}
+function markAll(present){if(!isAdmin())return;PLAYERS.forEach(p=>tgl(p,present));}
+async function saveAttendance(){
+  const date=document.getElementById('att-date').value;const btn=document.getElementById('att-save-btn');btn.disabled=true;btn.innerHTML='<span class="sp"></span>Salvando...';
+  try{const saves=[];PLAYERS.forEach(p=>{const row=document.getElementById('pr-'+p);if(!row)return;let status=null;if(row.classList.contains('present'))status='present';else if(row.classList.contains('absent'))status='absent';if(status&&(isAdmin()||p===session.nick))saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));});await Promise.all(saves);flash('att-ok');await loadAttendanceCounts();}
+  catch(e){flashErr('att-err',e.message);}finally{btn.disabled=false;btn.textContent='Salvar';}
+}
+async function saveKill(){
+  const date=document.getElementById('kill-date').value;const cta=document.getElementById('kill-cta').value;const player=isAdmin()?document.getElementById('kill-player').value:session.nick;const kill_count=parseInt(document.getElementById('kill-count').value)||0;
+  try{await api('POST','/api/kills',{date,cta,player,kill_count,screenshot:imgs[1]});imgs[1]=null;document.getElementById('kill-count').value=0;document.getElementById('kill-prev').style.display='none';flash('kill-ok');loadKillsTable();}
+  catch(e){flashErr('kill-err',e.message);}
+}
+async function loadKillsTable(){
+  try{const rows=await api('GET','/api/kills');if(!rows.length){document.getElementById('kills-table').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum kill registrado.</p>';return;}
+  let html='<table><thead><tr><th>Data</th><th>CTA</th><th>Player</th><th>Kills</th><th>Print</th><th></th></tr></thead><tbody>';
+  rows.slice(0,60).forEach(k=>{const canDel=isAdmin()||k.player===session.nick;html+=`<tr><td style="font-family:var(--mono);font-size:12px">${k.date}</td><td style="font-family:var(--mono);font-size:11px">${k.cta}</td><td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td><td><span class="badge ba2">${k.kill_count}</span></td><td>${k.screenshot?`<img src="${k.screenshot}" style="width:40px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer" onclick="viewImg('${k.screenshot}')">`:'-'}</td><td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td></tr>`;});
+  html+='</tbody></table>';document.getElementById('kills-table').innerHTML=html;}catch(e){}
+}
+async function delKill(id){try{await api('DELETE',`/api/kills/${id}`);loadKillsTable();}catch(e){}}
+async function saveRegear(){
+  const date=document.getElementById('rg-date').value;const cta=document.getElementById('rg-cta').value;const player=isAdmin()?document.getElementById('rg-player').value:session.nick;const note=document.getElementById('rg-note').value;
+  if(!imgs[2]){flashErr('rg-err','Anexe o print da morte!');return;}
+  try{await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2]});imgs[2]=null;document.getElementById('rg-note').value='';document.getElementById('rg-prev').style.display='none';flash('rg-ok');loadRegearList();}
+  catch(e){flashErr('rg-err',e.message);}
+}
+async function loadRegearList(){
+  try{const rows=await api('GET','/api/regear');if(!rows.length){document.getElementById('regear-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum pedido ainda.</p>';return;}
+  let html='';const next={pending:'approved',approved:'denied',denied:'pending'};
+  rows.forEach(r=>{const cls=r.status==='approved'?'st-a':r.status==='denied'?'st-d':'st-p';const lbl=r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
+    html+=`<div class="rg-item">${r.screenshot?`<img src="${r.screenshot}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:''}<div class="rg-info"><div class="rg-nick">${r.player}</div><div class="rg-meta">${r.date} · ${r.cta}${r.note?' · '+r.note:''}</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${isAdmin()?`<button class="stbadge clk ${cls}" onclick="setRgStatus(${r.id},'${next[r.status]}')">${lbl}</button><button class="btn-del" onclick="delRegear(${r.id})">Remover</button>`:`<span class="stbadge ${cls}">${lbl}</span>`}</div></div></div>`;});
+  document.getElementById('regear-list').innerHTML=html;}catch(e){}
+}
+async function setRgStatus(id,status){try{await api('PATCH',`/api/regear/${id}/status`,{status});loadRegearList();}catch(e){}}
+async function delRegear(id){try{await api('DELETE',`/api/regear/${id}`);loadRegearList();}catch(e){}}
+async function loadStats(){
+  if(!isAdmin())return;const from=document.getElementById('st-from').value;const to=document.getElementById('st-to').value;
+  try{const d=await api('GET',`/api/stats?from=${from}&to=${to}`);
+  const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total),0);const rgPending=(d.regear.find(r=>r.status==='pending')?.cnt)||0;
+  document.getElementById('stats-sum').innerHTML=`<div class="scard"><div class="snum">${d.totalCTAs}</div><div class="slbl">CTAs registradas</div></div><div class="scard"><div class="snum">${totalKills}</div><div class="slbl">Kills totais</div></div><div class="scard"><div class="snum">${rgPending}</div><div class="slbl">Re-gears pendentes</div></div>`;
+  const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt);});
+  const sorted=[...PLAYERS].sort((a,b)=>pMap[b].present-pMap[a].present);
+  let tHtml='<table><thead><tr><th>#</th><th>Player</th><th>Presentes</th><th>Ausentes</th><th>% Presença</th></tr></thead><tbody>';
+  sorted.forEach((p,i)=>{const s=pMap[p];const total=s.present+s.absent;const pct=total>0?Math.round(s.present/total*100):0;const cls=pct>=70?'bg':pct>=40?'ba2':'br';tHtml+=`<tr><td style="color:var(--text2);font-size:12px">${i+1}</td><td style="font-family:var(--mono);font-size:12px">${p}</td><td><span class="badge bg">${s.present}</span></td><td><span class="badge br">${s.absent}</span></td><td><span class="badge ${cls}">${pct}%</span></td></tr>`;});tHtml+='</tbody></table>';document.getElementById('stats-att').innerHTML=tHtml;
+  const kMap={};PLAYERS.forEach(p=>{kMap[p]=0;});d.kills.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total);});
+  const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);let kHtml='<div class="kgrid">';kSorted.forEach(p=>{const n=kMap[p];kHtml+=`<div class="kcard ${n>0?'has':''}"><div class="knum">${n}</div><div class="kname">${p}</div></div>`;});kHtml+='</div>';document.getElementById('stats-kills').innerHTML=kHtml;
+  const rgA=(d.regear.find(r=>r.status==='approved')?.cnt)||0;const rgD=(d.regear.find(r=>r.status==='denied')?.cnt)||0;document.getElementById('stats-rg').innerHTML=`<div class="flex gap8 wrap"><span class="badge ba2">Pendentes: ${rgPending}</span><span class="badge bg">Aprovados: ${rgA}</span><span class="badge br">Negados: ${rgD}</span></div>`;
+  }catch(e){console.error(e);}
+}
+function clearStFilter(){document.getElementById('st-from').value=today();document.getElementById('st-to').value=today();loadStats();}
+function exportCSV(){
+  const link=document.createElement('a');link.href='/api/export/csv';
+  const h=authHeaders();delete h['Content-Type'];
+  // Pass admin token via query param for CSV download
+  link.href=`/api/export/csv?_admin=${encodeURIComponent(session.adminPass||'')}`;link.click();
+}
+async function clearAllData(){
+  try{await Promise.all([api('DELETE','/api/data/all')]);}catch(e){}
+  closeModal();loadStats();loadKillsTable();loadRegearList();loadAttendanceCounts();
+}
+function showPage(p,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');if(btn)btn.classList.add('active');if(p==='stats')loadStats();if(p==='kills')loadKillsTable();if(p==='regear')loadRegearList();}
+function handleImg(e,previewId,slot){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{imgs[slot]=ev.target.result;const img=document.getElementById(previewId);img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);}
+function flash(id){const el=document.getElementById(id);el.style.display='block';setTimeout(()=>el.style.display='none',2200);}
+function flashErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
+function viewImg(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh">`);}
+function confirmClear(){document.getElementById('modal-confirm').classList.add('open');}
+function closeModal(){document.getElementById('modal-confirm').classList.remove('open');}
+document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
+</script>
+</body>
+</html>
