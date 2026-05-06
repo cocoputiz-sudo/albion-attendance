@@ -50,8 +50,8 @@ async function initDB() {
         paid BOOLEAN DEFAULT FALSE,
         overcharge BOOLEAN DEFAULT FALSE,
         overcharge_build VARCHAR(50),
-        overcharge_parts JSONB DEFAULT '[]',
         overcharge_genre VARCHAR(20),
+        overcharge_parts JSONB DEFAULT '[]',
         death_role VARCHAR(50),
         death_genre VARCHAR(20),
         created_at TIMESTAMPTZ DEFAULT NOW()
@@ -65,22 +65,9 @@ async function initDB() {
         active BOOLEAN DEFAULT TRUE,
         notes TEXT,
         password_hash VARCHAR(200),
+        phone VARCHAR(30),
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
-    `);
-
-    await client.query(`
-      ALTER TABLE regear ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE;
-      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge BOOLEAN DEFAULT FALSE;
-      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_build VARCHAR(50);
-      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_genre VARCHAR(20);
-      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_parts JSONB DEFAULT '[]';
-      ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_role VARCHAR(50);
-      ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_genre VARCHAR(20);
-      ALTER TABLE members ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);
-      ALTER TABLE kills ADD COLUMN IF NOT EXISTS screenshots JSONB DEFAULT '[]';
-    `);
-
 
       CREATE TABLE IF NOT EXISTS news (
         id SERIAL PRIMARY KEY,
@@ -119,8 +106,22 @@ async function initDB() {
         author VARCHAR(50) NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
 
-        console.log('[DB] Tabelas criadas/verificadas com sucesso.');
+    await client.query(`
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE;
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge BOOLEAN DEFAULT FALSE;
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_build VARCHAR(50);
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_genre VARCHAR(20);
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_parts JSONB DEFAULT '[]';
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_role VARCHAR(50);
+      ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_genre VARCHAR(20);
+      ALTER TABLE members ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);
+      ALTER TABLE members ADD COLUMN IF NOT EXISTS phone VARCHAR(30);
+      ALTER TABLE kills ADD COLUMN IF NOT EXISTS screenshots JSONB DEFAULT '[]';
+    `);
+
+    console.log('[DB] Tabelas criadas/verificadas com sucesso.');
   } finally {
     client.release();
   }

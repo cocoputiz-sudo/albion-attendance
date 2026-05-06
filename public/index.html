@@ -231,6 +231,11 @@
         <input type="password" id="login-player-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
         <div style="font-size:11px;color:var(--text2);margin-top:5px" id="player-pass-hint"></div>
       </div>
+      <div class="lf" id="field-player-phone" style="display:none">
+        <label>WhatsApp / Telefone</label>
+        <input type="tel" id="login-player-phone" placeholder="(XX) XXXXX-XXXX">
+        <div style="font-size:11px;color:var(--text2);margin-top:5px">Seu número ficará visível apenas para o officer/admin.</div>
+      </div>
       <div class="err" id="login-err"></div>
       <button class="btn btn-gold" style="width:100%;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
     </div>
@@ -626,6 +631,18 @@
   </div>
 </div>
 
+<div class="modal-ov" id="modal-reset-pass">
+  <div class="modal">
+    <button class="xbtn" onclick="document.getElementById('modal-reset-pass').classList.remove('open')">×</button>
+    <h2>Resetar Senha</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Player: <span id="reset-pass-nick" style="color:var(--gold2)"></span></p>
+    <div class="fi"><label>Nova senha</label><input type="text" id="reset-pass-value" placeholder="Digite a nova senha" style="max-width:100%"></div>
+    <div class="flex gap8 mt12">
+      <button class="btn btn-gold" onclick="confirmResetPass()">Confirmar</button>
+      <button class="btn btn-ol" onclick="document.getElementById('modal-reset-pass').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
 <div class="modal-ov" id="modal-deactivate">
   <div class="modal">
     <button class="xbtn" onclick="document.getElementById('modal-deactivate').classList.remove('open')">×</button>
@@ -960,7 +977,7 @@ async function doLogin(){
   const errEl=document.getElementById('login-err'),btn=document.getElementById('login-btn');
   errEl.style.display='none';btn.innerHTML='<span class="sp"></span>Entrando...';btn.disabled=true;
   try{
-    const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,nick,password})});
+    const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,nick,password,phone:document.getElementById('login-player-phone')?.value||null})});
     const data=await res.json();
     if(!res.ok){
       // Handle first access and password required
@@ -1331,9 +1348,12 @@ async function loadMembers(){
       html+=`<div class="member-row ${m.active?'':'inactive'}">
         <div class="member-nick">${m.nick}${!m.active?'<span style="font-size:9px;color:var(--text2);margin-left:6px">[inativo]</span>':''}</div>
         <div class="member-dates">Entrou: ${joined}${left?' · Saiu: '+left:''}</div>
+        ${m.phone?`<div style="font-size:11px;font-family:var(--mono);color:var(--blue);margin-top:2px">📱 ${m.phone}</div>`:''}
         <div class="member-notes">${m.notes||''}</div>
-        <div class="flex gap8">
+        <div style="font-size:10px;color:var(--text2);margin-top:3px">${m.has_password?'🔒 Senha definida':'⚠ Sem senha'}</div>
+        <div class="flex gap8" style="margin-top:6px;flex-wrap:wrap">
           ${m.active?`<button class="btn-del" onclick="openDeactivate('${m.nick}')">Marcar saída</button>`:`<button class="btn-green" onclick="reactivate('${m.nick}')">Reativar</button>`}
+          <button class="btn btn-ol btn-sm" onclick="openResetPass('${m.nick}')">Resetar senha</button>
           <button class="btn-del" onclick="deleteMember('${m.nick}')">×</button>
         </div>
       </div>`;
@@ -1346,6 +1366,21 @@ function openDeactivate(nick){
   document.getElementById('deact-nick').textContent=nick;
   document.getElementById('deact-date').value=today();
   document.getElementById('modal-deactivate').classList.add('open');
+}
+function openResetPass(nick){
+  document.getElementById('reset-pass-nick').textContent=nick;
+  document.getElementById('reset-pass-value').value='';
+  document.getElementById('modal-reset-pass').classList.add('open');
+}
+async function confirmResetPass(){
+  const nick=document.getElementById('reset-pass-nick').textContent;
+  const password=document.getElementById('reset-pass-value').value.trim();
+  if(!password){alert('Digite a nova senha');return;}
+  try{
+    await api('POST','/api/auth/reset-password',{nick,password});
+    document.getElementById('modal-reset-pass').classList.remove('open');
+    alert(`Senha de ${nick} resetada com sucesso!`);
+  }catch(e){alert(e.message);}
 }
 async function confirmDeactivate(){
   const left_at=document.getElementById('deact-date').value;

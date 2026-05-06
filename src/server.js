@@ -90,10 +90,11 @@ app.post('/api/auth/login', async (req, res) => {
       } else {
         // No password set — first access, need to define
         if (!password) return res.status(401).json({ error: 'Primeiro acesso: defina sua senha.', firstAccess: true });
-        // Save the new password
+        // Save the new password (phone may also be provided on first access)
+        const phone = req.body.phone || null;
         await pool.query(
-          'INSERT INTO members (nick, joined_at, password_hash) VALUES ($1, CURRENT_DATE, $2) ON CONFLICT (nick) DO UPDATE SET password_hash = $2',
-          [upper, hashPass(password)]
+          'INSERT INTO members (nick, joined_at, password_hash, phone) VALUES ($1, CURRENT_DATE, $2, $3) ON CONFLICT (nick) DO UPDATE SET password_hash = $2, phone = COALESCE($3, members.phone)',
+          [upper, hashPass(password), phone]
         );
       }
     } catch (e) {
@@ -124,7 +125,7 @@ app.get('/api/players', (req, res) => res.json(PLAYERS));
 // ── Members ───────────────────────────────────────────────────────────────────
 app.get('/api/members', requireAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nick, joined_at, left_at, active, notes, (password_hash IS NOT NULL) as has_password, created_at FROM members ORDER BY active DESC, joined_at DESC');
+    const result = await pool.query('SELECT id, nick, joined_at, left_at, active, notes, phone, (password_hash IS NOT NULL) as has_password, created_at FROM members ORDER BY active DESC, joined_at DESC');
     res.json(result.rows);
   } catch (e) { res.status(500).json({ error: 'Erro ao buscar membros.' }); }
 });
@@ -142,13 +143,14 @@ app.post('/api/members', requireAdmin, async (req, res) => {
 });
 
 app.patch('/api/members/:nick', requireAdmin, async (req, res) => {
-  const { active, left_at, joined_at, notes } = req.body;
+  const { active, left_at, joined_at, notes, phone } = req.body;
   try {
     const updates = [], params = [];
     if (active !== undefined) { params.push(active); updates.push(`active = $${params.length}`); }
     if (left_at !== undefined) { params.push(left_at); updates.push(`left_at = $${params.length}`); }
     if (joined_at !== undefined) { params.push(joined_at); updates.push(`joined_at = $${params.length}`); }
     if (notes !== undefined) { params.push(notes); updates.push(`notes = $${params.length}`); }
+    if (phone !== undefined) { params.push(phone); updates.push(`phone = $${params.length}`); }
     if (!updates.length) return res.status(400).json({ error: 'Nada para atualizar.' });
     params.push(req.params.nick.toUpperCase());
     await pool.query(`UPDATE members SET ${updates.join(', ')} WHERE nick = $${params.length}`, params);
