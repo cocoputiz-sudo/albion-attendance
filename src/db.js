@@ -19,6 +19,15 @@ async function initDB() {
         UNIQUE (date, cta, player)
       );
 
+      CREATE TABLE IF NOT EXISTS attendance_screenshots (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        cta VARCHAR(20) NOT NULL,
+        player VARCHAR(50) NOT NULL,
+        screenshot TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS kills (
         id SERIAL PRIMARY KEY,
         date DATE NOT NULL,
@@ -26,6 +35,7 @@ async function initDB() {
         player VARCHAR(50) NOT NULL,
         kill_count INTEGER NOT NULL DEFAULT 0,
         screenshot TEXT,
+        screenshots JSONB DEFAULT '[]',
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
@@ -52,6 +62,7 @@ async function initDB() {
         left_at DATE,
         active BOOLEAN DEFAULT TRUE,
         notes TEXT,
+        password_hash VARCHAR(200),
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
@@ -62,6 +73,8 @@ async function initDB() {
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_build VARCHAR(50);
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS overcharge_parts JSONB DEFAULT '[]';
       ALTER TABLE regear ADD COLUMN IF NOT EXISTS death_role VARCHAR(50);
+      ALTER TABLE members ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);
+      ALTER TABLE kills ADD COLUMN IF NOT EXISTS screenshots JSONB DEFAULT '[]';
     `);
 
     console.log('[DB] Tabelas criadas/verificadas com sucesso.');

@@ -201,6 +201,11 @@
       <div class="lf" id="field-nick-player"><label>Seu nick</label><select id="login-nick"></select></div>
       <div class="lf" id="field-nick-officer" style="display:none"><label>Seu nick</label><input type="text" id="login-officer-nick" placeholder="Ex: RAGNALDOKHUN"></div>
       <div class="lf" id="field-pass" style="display:none"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="lf" id="field-player-pass" style="display:none">
+        <label id="player-pass-label">Senha</label>
+        <input type="password" id="login-player-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        <div style="font-size:11px;color:var(--text2);margin-top:5px" id="player-pass-hint"></div>
+      </div>
       <div class="err" id="login-err"></div>
       <button class="btn btn-gold" style="width:100%;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
     </div>
@@ -233,7 +238,14 @@
   <div id="page-attendance" class="page active">
     <h2>Registrar Presença</h2>
     <div class="dr" style="margin-top:14px"><label>Data</label><input type="date" id="att-date" onchange="onDateChange()"></div>
-    <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 4px">Selecione a CTA</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 4px">
+      <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Selecione a CTA</div>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 14px">
+        <div style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div>
+        <span style="font-family:var(--mono);font-size:14px;color:var(--gold2)" id="utc-clock">--:--:-- UTC</span>
+      </div>
+    </div>
+    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
     <div class="cta-grid">
       <div class="cta-card" onclick="selectCTA('15:30 UTC')" id="cta-1530"><div class="cta-time">15:30 UTC</div><div class="cta-lbl">CTA 1 · TARDE</div><div class="cta-cnt" id="cnt-1530">—</div></div>
       <div class="cta-card" onclick="selectCTA('17:10 UTC')" id="cta-1710"><div class="cta-time">17:10 UTC</div><div class="cta-lbl">CTA 2 · TARDE</div><div class="cta-cnt" id="cnt-1710">—</div></div>
@@ -241,11 +253,14 @@
       <div class="cta-card" onclick="selectCTA('23:10 UTC')" id="cta-2310"><div class="cta-time">23:10 UTC</div><div class="cta-lbl">CTA 4 · NOITE</div><div class="cta-cnt" id="cnt-2310">—</div></div>
     </div>
     <div class="sec" id="att-section" style="display:none">
-      <div class="flex aic jb gap8">
+      <div class="flex aic jb gap8 wrap">
         <div class="sec-title" style="margin:0">Presença · <span id="att-cta-lbl" style="color:var(--gold2)"></span></div>
-        <div class="flex gap8" id="mark-all-btns" style="display:none">
-          <button class="btn btn-ol btn-sm" onclick="markAll(true)">Todos presentes</button>
-          <button class="btn btn-ol btn-sm" onclick="markAll(false)">Limpar todos</button>
+        <div class="flex gap8 wrap">
+          <button class="btn btn-ol btn-sm" id="ver-prints-btn" style="display:none" onclick="loadAttendanceScreenshots(document.getElementById('att-date').value, selectedCTA)">📷 Ver prints</button>
+          <div class="flex gap8" id="mark-all-btns" style="display:none">
+            <button class="btn btn-ol btn-sm" onclick="markAll(true)">Todos presentes</button>
+            <button class="btn btn-ol btn-sm" onclick="markAll(false)">Limpar todos</button>
+          </div>
         </div>
       </div>
       <div class="pinfo" id="pinfo">Você só pode marcar sua própria presença.</div>
@@ -278,8 +293,21 @@
       </div>
     </div>
     <div class="sec">
-      <div class="sec-title">Print do kill feed</div>
-      <div class="upl"><input type="file" accept="image/*" onchange="handleImg(event,'kill-prev',1)"><p>Clique ou arraste aqui</p><img id="kill-prev" class="upl-prev"></div>
+      <div class="sec-title">Prints do kill feed (até 3)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:5px">Print 1</div>
+          <div class="upl"><input type="file" accept="image/*" onchange="handleKillImg(event,0)"><p>Clique aqui</p><img id="kill-prev-0" class="upl-prev"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:5px">Print 2 (opcional)</div>
+          <div class="upl"><input type="file" accept="image/*" onchange="handleKillImg(event,1)"><p>Clique aqui</p><img id="kill-prev-1" class="upl-prev"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:5px">Print 3 (opcional)</div>
+          <div class="upl"><input type="file" accept="image/*" onchange="handleKillImg(event,2)"><p>Clique aqui</p><img id="kill-prev-2" class="upl-prev"></div>
+        </div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-gold" onclick="saveKill()">Registrar</button>
@@ -494,6 +522,46 @@
 </div>
 
 <script>
+// ── ATTENDANCE SCREENSHOTS (admin view) ───────────────────────────────────────
+async function loadAttendanceScreenshots(date, cta) {
+  if(!isAdmin())return;
+  try{
+    const data=await api('GET',`/api/attendance?date=${date}`);
+    const shots=(data[cta]||{}).screenshots||[];
+    if(!shots.length){alert('Nenhum print enviado para esta CTA.');return;}
+    const w=window.open('','_blank');
+    w.document.write('<html><body style="background:#0a0c10;padding:20px;font-family:sans-serif">');
+    w.document.write(`<h2 style="color:#c9a227;margin-bottom:16px">Prints — ${cta} — ${date}</h2>`);
+    shots.forEach(s=>{
+      w.document.write(`<div style="margin-bottom:12px"><p style="color:#8a8578;font-size:12px;margin-bottom:4px">${s.player}</p>`);
+      w.document.write(`<img src="${s.screenshot}" style="max-width:100%;border-radius:8px;border:1px solid #2a2e3a"></div>`);
+    });
+    w.document.write('</body></html>');
+  }catch(e){}
+}
+
+// ── KILL MULTIPLE SCREENSHOTS ─────────────────────────────────────────────────
+let killImgs=[null,null,null];
+function handleKillImg(e,slot){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{killImgs[slot]=ev.target.result;const img=document.getElementById('kill-prev-'+slot);img.src=ev.target.result;img.style.display='block';};
+  r.readAsDataURL(f);
+}
+
+// ── UTC CLOCK ─────────────────────────────────────────────────────────────────
+function startUTCClock(){
+  function update(){
+    const now=new Date();
+    const h=String(now.getUTCHours()).padStart(2,'0');
+    const m=String(now.getUTCMinutes()).padStart(2,'0');
+    const s=String(now.getUTCSeconds()).padStart(2,'0');
+    const el=document.getElementById('utc-clock');
+    if(el)el.textContent=`${h}:${m}:${s} UTC`;
+  }
+  update();setInterval(update,1000);
+}
+
 const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETE','GAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
 const BUILDS={'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],'Fire':['Capacete','Peito','Bota','Canção da Alvorada'],'Caller':['Capacete','Peito','Bota','Bruxo','Lume Críptico'],'Frost':['Capacete','Peito','Bota','Prisma'],'Piercers':['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário']};
 const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
@@ -528,16 +596,42 @@ function toggleLoginType(){
   document.getElementById('field-nick-player').style.display=t==='player'?'block':'none';
   document.getElementById('field-nick-officer').style.display=t==='officer'?'block':'none';
   document.getElementById('field-pass').style.display=t!=='player'?'block':'none';
+  document.getElementById('field-player-pass').style.display='none';
 }
+document.getElementById('login-nick').addEventListener('change', () => {
+  // Reset password field when nick changes
+  document.getElementById('field-player-pass').style.display='none';
+  document.getElementById('login-player-pass').value='';
+});
 async function doLogin(){
   const type=document.getElementById('login-type').value;
   const nick=type==='player'?document.getElementById('login-nick').value:document.getElementById('login-officer-nick').value.trim().toUpperCase();
-  const password=document.getElementById('login-pass').value;
+  const password=type==='player'?document.getElementById('login-player-pass').value:document.getElementById('login-pass').value;
   const errEl=document.getElementById('login-err'),btn=document.getElementById('login-btn');
   errEl.style.display='none';btn.innerHTML='<span class="sp"></span>Entrando...';btn.disabled=true;
   try{
     const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,nick,password})});
-    const data=await res.json();if(!res.ok)throw new Error(data.error);
+    const data=await res.json();
+    if(!res.ok){
+      // Handle first access and password required
+      if(data.firstAccess){
+        document.getElementById('field-player-pass').style.display='block';
+        document.getElementById('player-pass-label').textContent='Criar senha (primeiro acesso)';
+        document.getElementById('player-pass-hint').textContent='Escolha uma senha para seu acesso futuro.';
+        document.getElementById('login-player-pass').focus();
+        errEl.textContent='';errEl.style.display='none';
+        btn.innerHTML='Entrar';btn.disabled=false;return;
+      }
+      if(data.needsPassword){
+        document.getElementById('field-player-pass').style.display='block';
+        document.getElementById('player-pass-label').textContent='Senha';
+        document.getElementById('player-pass-hint').textContent='';
+        document.getElementById('login-player-pass').focus();
+        errEl.textContent='';errEl.style.display='none';
+        btn.innerHTML='Entrar';btn.disabled=false;return;
+      }
+      throw new Error(data.error);
+    }
     session={role:data.role,nick:data.nick,adminPass:password,officerNick:type==='officer'?data.nick:null};
     initApp();
   }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
@@ -562,6 +656,7 @@ function initApp(){
   document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
   ['stats-tab','shopping-tab','members-tab'].forEach(id=>document.getElementById(id).style.display=isAdmin()?'':'none');
   document.getElementById('mark-all-btns').style.display=isAdmin()?'flex':'none';
+  // ver-prints-btn only shown when CTA selected
   document.getElementById('pinfo').style.display=isAdmin()?'none':'block';
   document.getElementById('kill-player-fi').style.display=isAdmin()?'block':'none';
   document.getElementById('rg-player-fi').style.display=isAdmin()?'block':'none';
@@ -578,6 +673,7 @@ function initApp(){
   if(isAdmin())api('GET','/api/members').then(m=>{membersCache=m;}).catch(()=>{});
   loadAttendanceCounts();loadKillsTable();loadRegearList();
   if(isAdmin())loadStats();
+  startUTCClock();
 }
 
 // ── BUILDS ────────────────────────────────────────────────────────────────────
@@ -652,6 +748,8 @@ function selectCTA(cta){
   document.getElementById('cta-'+cta.replace(':','').replace(' UTC','')).classList.add('selected');
   document.getElementById('att-section').style.display='block';
   document.getElementById('att-cta-lbl').textContent=cta;
+  const vpBtn=document.getElementById('ver-prints-btn');
+  if(vpBtn)vpBtn.style.display=isAdmin()?'block':'none';
   renderPlayerList();
 }
 function renderPlayerList(){
@@ -693,7 +791,15 @@ async function saveAttendance(){
       const status=row.classList.contains('present')?'present':row.classList.contains('absent')?'absent':null;
       if(status&&(isAdmin()||p===session.nick))saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));
     });
-    await Promise.all(saves);flash('att-ok');await loadAttendanceCounts();
+    await Promise.all(saves);
+    // Save screenshot if provided
+    if(imgs[0]){
+      const player=isAdmin()?'ADMIN':session.nick;
+      try{
+        await api('POST','/api/attendance/screenshot',{date,cta:selectedCTA,player,screenshot:imgs[0]});
+      }catch(e){console.warn('Screenshot save error:',e);}
+    }
+    flash('att-ok');await loadAttendanceCounts();
   }catch(e){flashErr('att-err',e.message);}
   finally{btn.disabled=false;btn.textContent='Salvar';}
 }
@@ -704,8 +810,11 @@ async function saveKill(){
   const player=isAdmin()?document.getElementById('kill-player').value:session.nick;
   const kill_count=parseInt(document.getElementById('kill-count').value)||0;
   try{
-    await api('POST','/api/kills',{date,cta,player,kill_count,screenshot:imgs[1]});
-    imgs[1]=null;document.getElementById('kill-count').value=0;document.getElementById('kill-prev').style.display='none';
+    const screenshots=killImgs.filter(Boolean);
+    await api('POST','/api/kills',{date,cta,player,kill_count,screenshots});
+    killImgs=[null,null,null];
+    document.getElementById('kill-count').value=0;
+    [0,1,2].forEach(i=>{const img=document.getElementById('kill-prev-'+i);if(img)img.style.display='none';});
     flash('kill-ok');loadKillsTable();
   }catch(e){flashErr('kill-err',e.message);}
 }
@@ -717,7 +826,9 @@ async function loadKillsTable(){
     rows.slice(0,60).forEach(k=>{
       const d=k.date?k.date.split('T')[0]:'-';
       const canDel=isAdmin()||k.player===session.nick;
-      html+=`<tr><td style="font-family:var(--mono);font-size:12px">${d}</td><td style="font-family:var(--mono);font-size:11px">${k.cta}</td><td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td><td><span class="badge ba2">${k.kill_count}</span></td><td>${k.screenshot?`<img src="${k.screenshot}" style="width:40px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer" onclick="viewImg('${k.screenshot}')">`:'-'}</td><td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td></tr>`;
+      const allShots=Array.isArray(k.screenshots)&&k.screenshots.length?k.screenshots:(k.screenshot?[k.screenshot]:[]);
+      const shotsHtml=allShots.slice(0,3).map(s=>`<img src="${s}" style="width:36px;height:27px;object-fit:cover;border-radius:3px;cursor:pointer;margin-right:2px" onclick="viewImg('${s}')">`).join('')||'-';
+      html+=`<tr><td style="font-family:var(--mono);font-size:12px">${d}</td><td style="font-family:var(--mono);font-size:11px">${k.cta}</td><td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td><td><span class="badge ba2">${k.kill_count}</span></td><td>${shotsHtml}</td><td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td></tr>`;
     });
     html+='</tbody></table>';document.getElementById('kills-table').innerHTML=html;
   }catch(e){}
@@ -764,8 +875,8 @@ async function loadRegearList(){
           ${deathInfo}${ocInfo}
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
             ${isAdmin()?`
-              <button class="stbadge clk ${cls}" onclick="setRgStatus(${r.id},'${next[r.status]}')">${lbl}</button>
-              ${r.status==='approved'&&!r.paid?`<button class="btn-green" onclick="markPaid(${r.id})">Marcar pago</button>`:''}
+              <button class="btn btn-sm" style="padding:4px 10px;font-size:11px;background:${r.status==='pending'?'rgba(201,162,39,.2)':r.status==='approved'?'rgba(46,204,113,.2)':'rgba(224,58,58,.2)'};border:1px solid ${r.status==='pending'?'rgba(201,162,39,.4)':r.status==='approved'?'rgba(46,204,113,.4)':'rgba(224,58,58,.4)'};color:${r.status==='pending'?'var(--gold2)':r.status==='approved'?'var(--green)':'var(--red)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="cycleRgStatus(${r.id},'${r.status}')" title="Clique para alterar">${lbl} ▾</button>
+              <button class="btn btn-sm" style="padding:4px 10px;font-size:11px;background:${r.paid?'rgba(46,204,113,.15)':'rgba(201,162,39,.1)'};border:1px solid ${r.paid?'rgba(46,204,113,.3)':'rgba(201,162,39,.2)'};color:${r.paid?'var(--green)':'var(--text2)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="togglePaid(${r.id},${r.paid})" title="${r.paid?'Clique para desfazer pagamento':'Marcar como pago'}">${r.paid?'✓ Pago':'Marcar pago'}</button>
               <button class="btn-del" onclick="delRegear(${r.id})">Remover</button>
             `:`<span class="stbadge ${cls}">${lbl}</span>`}
           </div>
@@ -775,7 +886,14 @@ async function loadRegearList(){
   }catch(e){}
 }
 async function setRgStatus(id,status){try{await api('PATCH',`/api/regear/${id}/status`,{status});loadRegearList();}catch(e){}}
-async function markPaid(id){try{await api('PATCH',`/api/regear/${id}/paid`,{paid:true});loadRegearList();loadShopping();}catch(e){}}
+function cycleRgStatus(id,current){
+  const order={pending:'approved',approved:'denied',denied:'pending'};
+  setRgStatus(id,order[current]);
+}
+async function togglePaid(id,currentPaid){
+  try{await api('PATCH',`/api/regear/${id}/paid`,{paid:!currentPaid});loadRegearList();}catch(e){}
+}
+
 async function delRegear(id){try{await api('DELETE',`/api/regear/${id}`);loadRegearList();}catch(e){}}
 
 // ── COMPRAS ───────────────────────────────────────────────────────────────────

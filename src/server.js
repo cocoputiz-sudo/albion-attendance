@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
 const { pool, initDB } = require('./db');
 
 const app = express();
@@ -27,8 +28,10 @@ const BUILDS = {
   'Piercers':  ['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário'],
 };
 
+function hashPass(p) { return crypto.createHash('sha256').update(p + 'imortais_salt').digest('hex'); }
+
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '20mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 function isPrivileged(req) {
@@ -44,8 +47,9 @@ function requireAdmin(req, res, next) {
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { type, nick, password } = req.body;
+
   if (type === 'admin') {
     if (password !== ADMIN_PASS) return res.status(401).json({ error: 'Senha incorreta.' });
     return res.json({ role: 'admin', nick: 'ADMIN' });
@@ -58,9 +62,46 @@ app.post('/api/auth/login', (req, res) => {
   if (type === 'player') {
     const upper = (nick || '').toUpperCase();
     if (!PLAYERS.includes(upper)) return res.status(401).json({ error: 'Nick não encontrado.' });
+
+    // Check if player has a password set
+    try {
+      const member = await pool.query('SELECT password_hash FROM members WHERE nick = $1', [upper]);
+      if (member.rows.length > 0 && member.rows[0].password_hash) {
+        // Has password — validate
+        if (!password) return res.status(401).json({ error: 'Este player requer senha.', needsPassword: true });
+        if (member.rows[0].password_hash !== hashPass(password)) {
+          return res.status(401).json({ error: 'Senha incorreta.', needsPassword: true });
+        }
+      } else {
+        // No password set — first access, need to define
+        if (!password) return res.status(401).json({ error: 'Primeiro acesso: defina sua senha.', firstAccess: true });
+        // Save the new password
+        await pool.query(
+          'INSERT INTO members (nick, joined_at, password_hash) VALUES ($1, CURRENT_DATE, $2) ON CONFLICT (nick) DO UPDATE SET password_hash = $2',
+          [upper, hashPass(password)]
+        );
+      }
+    } catch (e) {
+      console.error('Auth error:', e);
+      return res.status(500).json({ error: 'Erro de autenticação.' });
+    }
+
     return res.json({ role: 'player', nick: upper });
   }
   res.status(400).json({ error: 'Tipo inválido.' });
+});
+
+// Admin reset player password
+app.post('/api/auth/reset-password', requireAdmin, async (req, res) => {
+  const { nick, password } = req.body;
+  if (!nick || !password) return res.status(400).json({ error: 'Nick e senha obrigatórios.' });
+  try {
+    await pool.query(
+      'UPDATE members SET password_hash = $1 WHERE nick = $2',
+      [hashPass(password), nick.toUpperCase()]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: 'Erro ao resetar senha.' }); }
 });
 
 app.get('/api/players', (req, res) => res.json(PLAYERS));
@@ -68,17 +109,17 @@ app.get('/api/players', (req, res) => res.json(PLAYERS));
 // ── Members ───────────────────────────────────────────────────────────────────
 app.get('/api/members', requireAdmin, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM members ORDER BY active DESC, joined_at DESC');
+    const result = await pool.query('SELECT id, nick, joined_at, left_at, active, notes, (password_hash IS NOT NULL) as has_password, created_at FROM members ORDER BY active DESC, joined_at DESC');
     res.json(result.rows);
   } catch (e) { res.status(500).json({ error: 'Erro ao buscar membros.' }); }
 });
 
 app.post('/api/members', requireAdmin, async (req, res) => {
   const { nick, joined_at, notes } = req.body;
-  if (!nick || !joined_at) return res.status(400).json({ error: 'Nick e data de entrada obrigatórios.' });
+  if (!nick || !joined_at) return res.status(400).json({ error: 'Nick e data obrigatórios.' });
   try {
     const result = await pool.query(
-      'INSERT INTO members (nick, joined_at, notes) VALUES ($1, $2, $3) ON CONFLICT (nick) DO UPDATE SET joined_at=$2, notes=$3, active=TRUE, left_at=NULL RETURNING *',
+      'INSERT INTO members (nick, joined_at, notes) VALUES ($1, $2, $3) ON CONFLICT (nick) DO UPDATE SET joined_at=$2, notes=$3, active=TRUE, left_at=NULL RETURNING id, nick, joined_at, left_at, active, notes',
       [nick.toUpperCase(), joined_at, notes || null]
     );
     res.json(result.rows[0]);
@@ -88,8 +129,7 @@ app.post('/api/members', requireAdmin, async (req, res) => {
 app.patch('/api/members/:nick', requireAdmin, async (req, res) => {
   const { active, left_at, joined_at, notes } = req.body;
   try {
-    const updates = [];
-    const params = [];
+    const updates = [], params = [];
     if (active !== undefined) { params.push(active); updates.push(`active = $${params.length}`); }
     if (left_at !== undefined) { params.push(left_at); updates.push(`left_at = $${params.length}`); }
     if (joined_at !== undefined) { params.push(joined_at); updates.push(`joined_at = $${params.length}`); }
@@ -102,10 +142,8 @@ app.patch('/api/members/:nick', requireAdmin, async (req, res) => {
 });
 
 app.delete('/api/members/:nick', requireAdmin, async (req, res) => {
-  try {
-    await pool.query('DELETE FROM members WHERE nick = $1', [req.params.nick.toUpperCase()]);
-    res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: 'Erro ao deletar membro.' }); }
+  try { await pool.query('DELETE FROM members WHERE nick = $1', [req.params.nick.toUpperCase()]); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: 'Erro ao deletar.' }); }
 });
 
 // ── Attendance ────────────────────────────────────────────────────────────────
@@ -113,11 +151,18 @@ app.get('/api/attendance', async (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ error: 'date obrigatório' });
   try {
-    const result = await pool.query('SELECT player, cta, status FROM attendance WHERE date = $1', [date]);
+    const [att, shots] = await Promise.all([
+      pool.query('SELECT player, cta, status FROM attendance WHERE date = $1', [date]),
+      pool.query('SELECT player, cta, screenshot FROM attendance_screenshots WHERE date = $1', [date])
+    ]);
     const grouped = {};
-    result.rows.forEach(r => {
-      if (!grouped[r.cta]) grouped[r.cta] = { present: [], absent: [] };
+    att.rows.forEach(r => {
+      if (!grouped[r.cta]) grouped[r.cta] = { present: [], absent: [], screenshots: [] };
       grouped[r.cta][r.status === 'present' ? 'present' : 'absent'].push(r.player);
+    });
+    shots.rows.forEach(r => {
+      if (!grouped[r.cta]) grouped[r.cta] = { present: [], absent: [], screenshots: [] };
+      grouped[r.cta].screenshots.push({ player: r.player, screenshot: r.screenshot });
     });
     res.json(grouped);
   } catch (e) { res.status(500).json({ error: 'Erro ao buscar attendance.' }); }
@@ -129,16 +174,41 @@ app.post('/api/attendance', async (req, res) => {
   const isPlayer = nick && PLAYERS.includes(nick.toUpperCase());
   if (!priv && !isPlayer) return res.status(403).json({ error: 'Não autorizado.' });
   const { date, cta, player, status } = req.body;
-  if (!date || !cta || !player || !status) return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
+  if (!date || !cta || !player || !status) return res.status(400).json({ error: 'Campos obrigatórios.' });
   if (!priv && player.toUpperCase() !== nick.toUpperCase()) return res.status(403).json({ error: 'Você só pode marcar sua própria presença.' });
   if (!['present','absent'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
   if (!PLAYERS.includes(player.toUpperCase())) return res.status(400).json({ error: 'Player não encontrado.' });
   try {
-    await pool.query(`INSERT INTO attendance (date, cta, player, status) VALUES ($1,$2,$3,$4)
-      ON CONFLICT (date, cta, player) DO UPDATE SET status = EXCLUDED.status`,
+    await pool.query(`INSERT INTO attendance (date, cta, player, status) VALUES ($1,$2,$3,$4) ON CONFLICT (date, cta, player) DO UPDATE SET status = EXCLUDED.status`,
       [date, cta, player.toUpperCase(), status]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: 'Erro ao salvar attendance.' }); }
+});
+
+// Upload screenshot for attendance
+app.post('/api/attendance/screenshot', async (req, res) => {
+  const nick = req.headers['x-player-nick'];
+  const priv = isPrivileged(req);
+  const isPlayer = nick && PLAYERS.includes(nick.toUpperCase());
+  if (!priv && !isPlayer) return res.status(403).json({ error: 'Não autorizado.' });
+  const { date, cta, player, screenshot } = req.body;
+  if (!date || !cta || !player || !screenshot) return res.status(400).json({ error: 'Campos obrigatórios.' });
+  if (!priv && player.toUpperCase() !== nick.toUpperCase()) return res.status(403).json({ error: 'Não autorizado.' });
+  try {
+    await pool.query(
+      `INSERT INTO attendance_screenshots (date, cta, player, screenshot) VALUES ($1,$2,$3,$4)
+       ON CONFLICT DO NOTHING`,
+      [date, cta, player.toUpperCase(), screenshot]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    // If conflict constraint missing, just insert
+    try {
+      await pool.query('INSERT INTO attendance_screenshots (date, cta, player, screenshot) VALUES ($1,$2,$3,$4)',
+        [date, cta, player.toUpperCase(), screenshot]);
+      res.json({ ok: true });
+    } catch(e2) { res.status(500).json({ error: 'Erro ao salvar screenshot.' }); }
+  }
 });
 
 // ── Kills ─────────────────────────────────────────────────────────────────────
@@ -147,7 +217,7 @@ app.get('/api/kills', async (req, res) => {
   const priv = isPrivileged(req);
   const { from, to } = req.query;
   try {
-    let q = 'SELECT id, date::text as date, cta, player, kill_count, screenshot, created_at FROM kills WHERE 1=1';
+    let q = 'SELECT id, date::text as date, cta, player, kill_count, screenshot, screenshots, created_at FROM kills WHERE 1=1';
     const p = [];
     if (!priv && nick) { p.push(nick.toUpperCase()); q += ` AND player = $${p.length}`; }
     if (from) { p.push(from); q += ` AND date >= $${p.length}`; }
@@ -163,13 +233,16 @@ app.post('/api/kills', async (req, res) => {
   const priv = isPrivileged(req);
   const isPlayer = nick && PLAYERS.includes(nick.toUpperCase());
   if (!priv && !isPlayer) return res.status(403).json({ error: 'Não autorizado.' });
-  const { date, cta, player, kill_count, screenshot } = req.body;
-  if (!date || !cta || !player) return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
+  const { date, cta, player, kill_count, screenshot, screenshots } = req.body;
+  if (!date || !cta || !player) return res.status(400).json({ error: 'Campos obrigatórios.' });
   if (!priv && player.toUpperCase() !== nick.toUpperCase()) return res.status(403).json({ error: 'Você só pode registrar seus próprios kills.' });
   try {
+    const allScreenshots = [];
+    if (screenshot) allScreenshots.push(screenshot);
+    if (screenshots && Array.isArray(screenshots)) allScreenshots.push(...screenshots);
     const result = await pool.query(
-      'INSERT INTO kills (date, cta, player, kill_count, screenshot) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-      [date, cta, player.toUpperCase(), kill_count || 0, screenshot || null]);
+      'INSERT INTO kills (date, cta, player, kill_count, screenshot, screenshots) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
+      [date, cta, player.toUpperCase(), kill_count || 0, allScreenshots[0] || null, JSON.stringify(allScreenshots)]);
     res.json({ ok: true, id: result.rows[0].id });
   } catch (e) { res.status(500).json({ error: 'Erro ao salvar kill.' }); }
 });
@@ -191,7 +264,7 @@ app.get('/api/regear', async (req, res) => {
     if (!priv && nick) { p.push(nick.toUpperCase()); q += ` AND player = $${p.length}`; }
     if (from) { p.push(from); q += ` AND date >= $${p.length}`; }
     if (to)   { p.push(to);   q += ` AND date <= $${p.length}`; }
-    q += ' ORDER BY created_at DESC';
+    q += ' ORDER BY paid ASC, created_at DESC';
     const result = await pool.query(q, p);
     res.json(result.rows);
   } catch (e) { res.status(500).json({ error: 'Erro ao buscar regear.' }); }
@@ -234,40 +307,27 @@ app.delete('/api/regear/:id', requireAdmin, async (req, res) => {
   catch (e) { res.status(500).json({ error: 'Erro ao deletar.' }); }
 });
 
-// ── Compras (shopping list) ───────────────────────────────────────────────────
+// ── Shopping ──────────────────────────────────────────────────────────────────
 app.get('/api/shopping', requireAdmin, async (req, res) => {
   const { from, to } = req.query;
   try {
-    let q = `SELECT overcharge, overcharge_build, overcharge_parts, death_role
-             FROM regear WHERE status = 'approved' AND paid = FALSE`;
+    let q = `SELECT overcharge, overcharge_build, overcharge_parts, death_role FROM regear WHERE status = 'approved' AND paid = FALSE`;
     const p = [];
     if (from) { p.push(from); q += ` AND date >= $${p.length}`; }
     if (to)   { p.push(to);   q += ` AND date <= $${p.length}`; }
     const result = await pool.query(q, p);
-
-    // Build shopping list
     const shopping = {};
     Object.keys(BUILDS).forEach(b => { shopping[b] = {}; BUILDS[b].forEach(part => { shopping[b][part] = 0; }); });
-
     result.rows.forEach(r => {
-      // Death: full set
       if (r.death_role && shopping[r.death_role]) {
         BUILDS[r.death_role].forEach(part => { shopping[r.death_role][part]++; });
       }
-      // Overcharge: individual parts
       if (r.overcharge && r.overcharge_build && shopping[r.overcharge_build]) {
         const parts = Array.isArray(r.overcharge_parts) ? r.overcharge_parts : JSON.parse(r.overcharge_parts || '[]');
-        parts.forEach(part => {
-          if (shopping[r.overcharge_build][part] !== undefined) shopping[r.overcharge_build][part]++;
-        });
+        parts.forEach(part => { if (shopping[r.overcharge_build][part] !== undefined) shopping[r.overcharge_build][part]++; });
       }
     });
-
-    // Remove builds with nothing to buy
-    Object.keys(shopping).forEach(b => {
-      if (Object.values(shopping[b]).every(v => v === 0)) delete shopping[b];
-    });
-
+    Object.keys(shopping).forEach(b => { if (Object.values(shopping[b]).every(v => v === 0)) delete shopping[b]; });
     res.json(shopping);
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao calcular compras.' }); }
 });
@@ -298,17 +358,17 @@ app.get('/api/stats', requireAdmin, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao buscar stats.' }); }
 });
 
-// ── Clear all ─────────────────────────────────────────────────────────────────
+// ── Clear / Export ────────────────────────────────────────────────────────────
 app.delete('/api/data/all', requireAdmin, async (req, res) => {
   try {
     await pool.query('DELETE FROM attendance');
+    await pool.query('DELETE FROM attendance_screenshots');
     await pool.query('DELETE FROM kills');
     await pool.query('DELETE FROM regear');
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: 'Erro ao limpar dados.' }); }
 });
 
-// ── Export CSV ────────────────────────────────────────────────────────────────
 app.get('/api/export/csv', async (req, res) => {
   const pass = req.headers['x-admin-pass'] || req.query._admin;
   const nick = (req.headers['x-officer-nick'] || '').toUpperCase();
@@ -327,11 +387,8 @@ app.get('/api/export/csv', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Erro ao exportar.' }); }
 });
 
-// ── Fallback ──────────────────────────────────────────────────────────────────
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 initDB().then(() => {
   app.listen(PORT, () => console.log(`[Server] Rodando na porta ${PORT}`));
-}).catch(err => { console.error('[DB] Falha ao inicializar:', err); process.exit(1); });
+}).catch(err => { console.error('[DB] Falha:', err); process.exit(1); });
