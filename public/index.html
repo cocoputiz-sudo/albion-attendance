@@ -1147,7 +1147,7 @@ function initApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-screen').style.display='block';
   document.getElementById('badge-name').textContent=session.nick;
-  const av=document.getElementById('user-avatar');if(av)av.textContent=session.nick?session.nick[0]:'?';
+  ['user-avatar','user-avatar-letter'].forEach(id=>{const av=document.getElementById(id);if(av)av.textContent=session.nick?session.nick[0]:'?';});
   document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
   ['stats-tab','shopping-tab','members-tab','admin-tab'].forEach(id=>document.getElementById(id).style.display=isAdmin()?'':'none');
   document.getElementById('ranking-tab').style.display='';
@@ -1635,10 +1635,9 @@ function viewImg(src){const w=window.open();w.document.write(`<img src="${src}" 
 function confirmClear(){document.getElementById('modal-confirm').classList.add('open');}
 function closeModal(){document.getElementById('modal-confirm').classList.remove('open');}
 
-document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
+// (login-nick populated in initDropdowns below)
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
 let dashCharts={kills:null,att:null};
 
 
@@ -1797,10 +1796,19 @@ showPage=function(p,btn){
   if(p==='kills'){setTimeout(hookKillsOCR,300);}
 };
 
-// Init: show dashboard by default
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
-});
+// Populate dropdowns immediately — script is at bottom of body so DOM is ready
+(function initDropdowns(){
+  const fillSel=(id,arr)=>{const el=document.getElementById(id);if(el)el.innerHTML=arr.map(p=>`<option value="${p}">${p}</option>`).join('');};
+  fillSel('login-nick',PLAYERS);
+  fillSel('reset-nick-sel',PLAYERS);
+  fillSel('mb-nick',PLAYERS);
+  fillSel('kill-player',PLAYERS);
+  fillSel('rg-player',PLAYERS);
+  fillSel('radar-player',PLAYERS);
+  // news-target: keep empty first option
+  const nt=document.getElementById('news-target');
+  if(nt)PLAYERS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;nt.appendChild(o);});
+})();
 
 function setRkWeek(){const now=new Date();const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));document.getElementById('rk-from').value=mon.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
 function setRkMonth(){const now=new Date();const start=new Date(now.getFullYear(),now.getMonth(),1);document.getElementById('rk-from').value=start.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
