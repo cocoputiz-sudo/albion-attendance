@@ -439,7 +439,6 @@ app.get('/api/export/csv', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Erro ao exportar.' }); }
 });
 
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── News ──────────────────────────────────────────────────────────────────────
 app.get('/api/news', async (req, res) => {
@@ -514,6 +513,8 @@ app.delete('/api/videos/:id', requireAdmin, async (req, res) => {
   try { await pool.query('DELETE FROM videos WHERE id = $1', [req.params.id]); res.json({ ok: true }); }
   catch (e) { res.status(500).json({ error: 'Erro.' }); }
 });
+
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 initDB().then(() => {
   app.listen(PORT, () => console.log(`[Server] Rodando na porta ${PORT}`));
