@@ -46,7 +46,7 @@ No painel do Railway, no serviço Node, vá em **Variables** e adicione:
 
 | Variável | Valor |
 |----------|-------|
-| `ADMIN_PASS` | `senha123admin22` (ou outra senha) |
+| `ADMIN_PASS` | `exemplo123` (ou outra senha) |
 | `NODE_ENV` | `production` |
 
 > A `DATABASE_URL` já é injetada automaticamente pelo PostgreSQL do Railway.
