@@ -679,6 +679,17 @@ tr:first-child td{border-top:none}
     <div id="admin-panel-content"><div style="text-align:center;padding:60px;color:var(--text2);font-family:var(--mono)">Clique em Atualizar para carregar o painel.</div></div>
   </div>
 
+
+  <!-- MODAL: PERFIL REGEAR DO PLAYER -->
+  <div class="modal-ov" id="modal-player-rg">
+    <div class="modal" style="max-width:680px;width:95%">
+      <button class="xbtn" onclick="document.getElementById('modal-player-rg').classList.remove('open')">×</button>
+      <div id="modal-player-rg-content">
+        <div style="text-align:center;padding:40px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Carregando...</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
 
 <!-- MODALS -->
@@ -1402,7 +1413,7 @@ async function loadRegearList(){
       html+=`<div class="rg-item ${r.paid?'paid-item':''}">
         ${r.screenshot?`<img src="${r.screenshot}" style="width:56px;height:56px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:``}
         <div class="rg-info">
-          <div class="flex aic gap8"><div class="rg-nick">${r.player}</div>${paidBadge}</div>
+          <div class="flex aic gap8"><div class="rg-nick" style="cursor:pointer;text-decoration:underline dotted" onclick="openPlayerRgModal('${r.player}')" title="Ver perfil de ${r.player}">${r.player}</div>${paidBadge}</div>
           <div class="rg-meta">${d} · ${r.cta}${r.note?' · '+r.note:''}</div>
           ${deathInfo}${ocInfo}
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
@@ -2348,6 +2359,142 @@ async function exportExcel(){
   }catch(e){
     if(statusEl)statusEl.innerHTML=`<span style="color:var(--red2)">Erro ao gerar Excel: ${e.message}</span>`;
     console.error(e);
+  }
+}
+
+// ── MODAL PERFIL RE-GEAR DO PLAYER ──────────────────────────────────────────
+async function openPlayerRgModal(nick){
+  const modal = document.getElementById('modal-player-rg');
+  const content = document.getElementById('modal-player-rg-content');
+  modal.classList.add('open');
+  content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Carregando perfil de ${nick}...</div>`;
+
+  try {
+    const rows = await api('GET', '/api/regear');
+    const playerRows = rows.filter(r => r.player === nick);
+
+    if (!playerRows.length) {
+      content.innerHTML = `
+        <h2 style="margin-bottom:16px">⚒ ${nick}</h2>
+        <p style="color:var(--text2);font-family:var(--mono);font-size:13px">Nenhum pedido de re-gear encontrado para este player.</p>`;
+      return;
+    }
+
+    // Agrupar itens a receber (aprovados, não pagos)
+    const aReceber = playerRows.filter(r => r.status === 'approved' && !r.paid);
+    const pendentes = playerRows.filter(r => r.status === 'pending');
+    const negados   = playerRows.filter(r => r.status === 'denied');
+    const pagos     = playerRows.filter(r => r.paid);
+
+    // Consolidar lista de itens aprovados não pagos
+    const itensConsolidados = {};
+    aReceber.forEach(r => {
+      if (r.death_role) {
+        const key = `Morte · ${r.death_genre||''} · ${r.death_role} (set completo)`;
+        itensConsolidados[key] = (itensConsolidados[key]||0) + 1;
+      }
+      if (r.overcharge && r.overcharge_build) {
+        const parts = Array.isArray(r.overcharge_parts) ? r.overcharge_parts : JSON.parse(r.overcharge_parts||'[]');
+        const genre = r.overcharge_genre ? r.overcharge_genre + ' · ' : '';
+        const key = `OC · ${genre}${r.overcharge_build}`;
+        if (parts.length) {
+          parts.forEach(p => { itensConsolidados[`${key} · ${p}`] = (itensConsolidados[`${key} · ${p}`]||0)+1; });
+        } else {
+          itensConsolidados[key] = (itensConsolidados[key]||0)+1;
+        }
+      }
+    });
+
+    const AVATAR_COLORS = ['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400'];
+    const bgClr = AVATAR_COLORS[nick.charCodeAt(0) % AVATAR_COLORS.length];
+
+    const next = {pending:'approved', approved:'denied', denied:'pending'};
+
+    function renderRgRow(r, showActions=true) {
+      const cls = r.status==='approved'?'st-a':r.status==='denied'?'st-d':'st-p';
+      const lbl = r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
+      const d = r.date ? r.date.split('T')[0] : '-';
+      let ocInfo='', deathInfo='';
+      if (r.death_role) deathInfo=`<div class="rg-death">☠ Morte — ${r.death_genre?r.death_genre+' · ':''}${r.death_role} (set completo)</div>`;
+      if (r.overcharge && r.overcharge_build) {
+        const parts = Array.isArray(r.overcharge_parts) ? r.overcharge_parts : JSON.parse(r.overcharge_parts||'[]');
+        ocInfo=`<div class="rg-oc">⚡ OC ${r.overcharge_genre?r.overcharge_genre+' · ':''}${r.overcharge_build}${parts.length?' · '+parts.join(', '):''}</div>`;
+      }
+      const paidBadge = r.paid ? '<span class="badge bg" style="font-size:10px;margin-left:6px">PAGO</span>' : '';
+      return `<div class="rg-item ${r.paid?'paid-item':''}" style="margin:6px 0">
+        ${r.screenshot ? `<img src="${r.screenshot}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;border:1px solid var(--border2)" onclick="viewImg('${r.screenshot}')">` : `<div style="width:52px;height:52px;border-radius:6px;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);font-size:20px">💀</div>`}
+        <div class="rg-info" style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">${d} · ${r.cta}</span>
+            ${paidBadge}
+          </div>
+          ${deathInfo}${ocInfo}
+          ${r.note ? `<div style="font-size:11px;color:var(--text2);margin-top:2px;font-style:italic">${r.note}</div>` : ''}
+          ${showActions && isAdmin() ? `
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-sm" style="padding:3px 10px;font-size:10px;background:${r.status==='approved'?'rgba(46,204,113,.2)':r.status==='denied'?'rgba(224,58,58,.2)':'rgba(201,162,39,.2)'};border:1px solid ${r.status==='approved'?'rgba(46,204,113,.4)':r.status==='denied'?'rgba(224,58,58,.4)':'rgba(201,162,39,.4)'};color:${r.status==='approved'?'var(--green2)':r.status==='denied'?'var(--red2)':'var(--gold2)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="cycleRgStatus(${r.id},'${r.status}');setTimeout(()=>openPlayerRgModal('${nick}'),400)">${lbl} ▾</button>
+            <button class="btn btn-sm" style="padding:3px 10px;font-size:10px;background:${r.paid?'rgba(46,204,113,.15)':'rgba(201,162,39,.1)'};border:1px solid ${r.paid?'rgba(46,204,113,.3)':'rgba(201,162,39,.2)'};color:${r.paid?'var(--green2)':'var(--text2)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="togglePaid(${r.id},${r.paid});setTimeout(()=>openPlayerRgModal('${nick}'),400)">${r.paid?'✓ Pago':'Marcar pago'}</button>
+          </div>` : ''}
+        </div>
+      </div>`;
+    }
+
+    content.innerHTML = `
+      <!-- HEADER DO PLAYER -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border2)">
+        <div style="width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,${bgClr}88,${bgClr});display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:700;color:var(--bg);flex-shrink:0">${nick[0]}</div>
+        <div>
+          <div style="font-family:var(--display);font-size:18px;font-weight:700;color:var(--gold2);letter-spacing:1px">${nick}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:3px;font-family:var(--mono)">
+            <span style="color:var(--gold2)">${aReceber.length}</span> a receber ·
+            <span style="color:var(--text2)">${pendentes.length}</span> pendentes ·
+            <span style="color:var(--green2)">${pagos.length}</span> pagos ·
+            <span style="color:var(--red2)">${negados.length}</span> negados
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA DO QUE DEVE RECEBER -->
+      ${aReceber.length > 0 ? `
+      <div style="background:rgba(39,174,96,.06);border:1px solid rgba(39,174,96,.2);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-family:var(--display);font-size:11px;color:var(--green2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">✓ O QUE ${nick} DEVE RECEBER</div>
+        ${Object.entries(itensConsolidados).map(([item, qty]) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">${item}</span>
+            ${qty > 1 ? `<span style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--gold2);background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.2);border-radius:4px;padding:1px 8px">×${qty}</span>` : ''}
+          </div>`).join('')}
+      </div>` : ''}
+
+      <!-- APROVADOS NÃO PAGOS (detalhes com prints) -->
+      ${aReceber.length > 0 ? `
+      <div style="margin-bottom:16px">
+        <div style="font-family:var(--display);font-size:10px;color:var(--green2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Aprovados — aguardando pagamento (${aReceber.length})</div>
+        ${aReceber.map(r => renderRgRow(r, true)).join('')}
+      </div>` : ''}
+
+      <!-- PENDENTES -->
+      ${pendentes.length > 0 ? `
+      <div style="margin-bottom:16px">
+        <div style="font-family:var(--display);font-size:10px;color:var(--gold2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Pendentes (${pendentes.length})</div>
+        ${pendentes.map(r => renderRgRow(r, true)).join('')}
+      </div>` : ''}
+
+      <!-- NEGADOS -->
+      ${negados.length > 0 ? `
+      <div style="margin-bottom:16px">
+        <div style="font-family:var(--display);font-size:10px;color:var(--red2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Negados (${negados.length})</div>
+        ${negados.map(r => renderRgRow(r, false)).join('')}
+      </div>` : ''}
+
+      <!-- PAGOS (colapsado) -->
+      ${pagos.length > 0 ? `
+      <details style="margin-bottom:8px">
+        <summary style="font-family:var(--display);font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;cursor:pointer;padding:8px 0">Histórico pagos (${pagos.length})</summary>
+        <div style="margin-top:8px">${pagos.map(r => renderRgRow(r, false)).join('')}</div>
+      </details>` : ''}
+    `;
+  } catch(e) {
+    content.innerHTML = `<div class="alert alert-e" style="display:block">Erro: ${e.message}</div>`;
   }
 }
 
