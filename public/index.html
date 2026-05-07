@@ -1644,25 +1644,11 @@ let dashCharts={kills:null,att:null};
 async function loadDashboard(){
   try{
     // Greet
-    const nick=currentUser?.nick||'Guerreiro';
+    const nick=session?.nick||'Guerreiro';
     const el=document.getElementById('dash-greeting');
     if(el)el.textContent=`Bem-vindo, ${nick}`;
 
-    // For players: simple view; for admin/officer: full stats
-    if(!isAdmin()){
-      const sub=document.getElementById('dash-sub');
-      if(sub)sub.textContent=`Guild Imortais · ${PLAYERS.length} guerreiros`;
-      // Stat cards simples para player
-      const dsEl=document.getElementById('dash-stats');
-      if(dsEl)dsEl.innerHTML=`
-        <div class="stat-card"><div class="stat-icon">⚔️</div><div class="stat-num">${PLAYERS.length}</div><div class="stat-label">Players no guild</div></div>`;
-      // Ranking vazio para player
-      const dr=document.getElementById('dash-ranking');
-      if(dr)dr.innerHTML='<p style="color:var(--text2);font-size:12px;font-family:var(--mono);grid-column:1/-1;padding:10px 0">Ranking disponível apenas para officers.</p>';
-      await loadDashboardCTAs();
-      await loadDashboardAttTable();
-      return;
-    }
+    // Both player and admin load real stats (api/stats is now public)
 
     const d=await api('GET',`/api/stats?from=2024-01-01&to=2099-12-31`);
     const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
@@ -1672,6 +1658,15 @@ async function loadDashboard(){
 
     const sub=document.getElementById('dash-sub');
     if(sub)sub.textContent=`Guild Imortais · ${PLAYERS.length} guerreiros ativos · ${d.totalCTAs} CTAs registradas`;
+    // For players: add personal stats to greeting
+    if(!isAdmin()&&session.nick){
+      const myKills=parseInt(d.kills.find(k=>k.player===session.nick)?.total||0);
+      const myPresent=d.attendance.filter(a=>a.player===session.nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+      const myAbs=d.attendance.filter(a=>a.player===session.nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+      const myTot=myPresent+myAbs;
+      const myPct=myTot>0?Math.round(myPresent/myTot*100):0;
+      if(sub)sub.textContent=`Suas stats: ${myKills} kills · ${myPresent} presenças · ${myPct}% de attendance`;
+    }
 
     // Stat cards — IDs individuais no HTML
     const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};

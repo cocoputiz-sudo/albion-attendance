@@ -385,7 +385,7 @@ app.get('/api/shopping', requireAdmin, async (req, res) => {
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
-app.get('/api/stats', requireAdmin, async (req, res) => {
+app.get('/api/stats', async (req, res) => {
   const { from, to } = req.query;
   try {
     const bw = (alias) => {
