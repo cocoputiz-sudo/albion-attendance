@@ -329,21 +329,13 @@
       </div>
     </div>
     <div class="sec">
-      <div class="sec-title">Prints do kill feed (até 3)</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
-        <div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:5px">Print 1</div>
-          <div class="upl"><input type="file" accept="image/*" onchange="handleKillImg(event,0)"><p>Clique aqui</p><img id="kill-prev-0" class="upl-prev"></div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:5px">Print 2 (opcional)</div>
-          <div class="upl"><input type="file" accept="image/*" onchange="handleKillImg(event,1)"><p>Clique aqui</p><img id="kill-prev-1" class="upl-prev"></div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:5px">Print 3 (opcional)</div>
-          <div class="upl"><input type="file" accept="image/*" onchange="handleKillImg(event,2)"><p>Clique aqui</p><img id="kill-prev-2" class="upl-prev"></div>
-        </div>
+      <div class="sec-title">Prints do kill feed — selecione quantos quiser de uma vez</div>
+      <div class="upl" id="kill-upl-area">
+        <input type="file" accept="image/*" multiple onchange="handleKillImgs(event)">
+        <p>Clique ou arraste — selecione vários arquivos de uma vez</p>
       </div>
+      <div id="kill-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+      <div id="kill-imgs-count" style="font-size:11px;color:var(--text2);margin-top:6px;display:none"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-gold" onclick="saveKill()">Registrar</button>
@@ -881,12 +873,32 @@ async function loadAttendanceScreenshots(date, cta) {
 }
 
 // ── KILL MULTIPLE SCREENSHOTS ─────────────────────────────────────────────────
-let killImgs=[null,null,null];
-function handleKillImg(e,slot){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{killImgs[slot]=ev.target.result;const img=document.getElementById('kill-prev-'+slot);img.src=ev.target.result;img.style.display='block';};
-  r.readAsDataURL(f);
+let killImgs=[];
+function handleKillImgs(e){
+  const files=[...e.target.files];
+  if(!files.length)return;
+  killImgs=[];
+  const previews=document.getElementById('kill-previews');
+  previews.innerHTML='';
+  const count=document.getElementById('kill-imgs-count');
+  let loaded=0;
+  files.forEach((f,i)=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      killImgs[i]=ev.target.result;
+      const img=document.createElement('img');
+      img.src=ev.target.result;
+      img.style.cssText='width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer';
+      img.onclick=()=>viewImg(ev.target.result);
+      previews.appendChild(img);
+      loaded++;
+      if(loaded===files.length){
+        count.style.display='block';
+        count.textContent=files.length+' print'+(files.length>1?'s':'')+' selecionado'+(files.length>1?'s':'');
+      }
+    };
+    r.readAsDataURL(f);
+  });
 }
 
 // ── UTC CLOCK ─────────────────────────────────────────────────────────────────
@@ -1214,9 +1226,12 @@ async function saveKill(){
   try{
     const screenshots=killImgs.filter(Boolean);
     await api('POST','/api/kills',{date,cta,player,kill_count,screenshots});
-    killImgs=[null,null,null];
+    killImgs=[];
     document.getElementById('kill-count').value=0;
-    [0,1,2].forEach(i=>{const img=document.getElementById('kill-prev-'+i);if(img)img.style.display='none';});
+    document.getElementById('kill-previews').innerHTML='';
+    document.getElementById('kill-imgs-count').style.display='none';
+    // Reset file input
+    const upl=document.querySelector('#kill-upl-area input');if(upl)upl.value='';
     flash('kill-ok');loadKillsTable();
   }catch(e){flashErr('kill-err',e.message);}
 }
