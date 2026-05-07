@@ -407,6 +407,8 @@ tr:first-child td{border-top:none}
     <button class="nav-btn" id="stats-tab" style="display:none" onclick="showPage('stats',this)">📊 Estatísticas</button>
     <button class="nav-btn" id="shopping-tab" style="display:none" onclick="showPage('shopping',this)">🛒 Compras</button>
     <button class="nav-btn" id="members-tab" style="display:none" onclick="showPage('members',this)">👥 Membros</button>
+    <button class="nav-btn" id="ranking-tab" onclick="showPage('ranking',this)">🏆 Ranking</button>
+    <button class="nav-btn" id="admin-tab" style="display:none" onclick="showPage('admin',this)">⚙ Admin</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -652,6 +654,31 @@ tr:first-child td{border-top:none}
     </div>
   </div>
 
+
+  <!-- RANKING & MVP -->
+  <div id="page-ranking" class="page">
+    <div class="flex aic jb wrap" style="margin-bottom:16px;margin-top:4px;gap:10px">
+      <h2>🏆 Ranking & MVP</h2>
+      <div class="flex aic gap8 wrap">
+        <div class="dr" style="margin:0"><label>De</label><input type="date" id="rk-from" style="width:135px" onchange="loadRanking()"></div>
+        <div class="dr" style="margin:0"><label>Até</label><input type="date" id="rk-to" style="width:135px" onchange="loadRanking()"></div>
+        <button class="btn btn-ol btn-sm" onclick="setRkWeek()">Esta semana</button>
+        <button class="btn btn-ol btn-sm" onclick="setRkMonth()">Este mês</button>
+        <button class="btn btn-ol btn-sm" onclick="setRkAll()">All-time</button>
+      </div>
+    </div>
+    <div id="rk-content"><div style="text-align:center;padding:60px;color:var(--text2);font-family:var(--mono)">Selecione um período e carregue o ranking.</div></div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="page-admin" class="page">
+    <div class="flex aic jb" style="margin-bottom:16px;margin-top:4px">
+      <h2>⚙ Painel Admin</h2>
+      <button class="btn btn-gold btn-sm" onclick="loadAdminPanel()">↻ Atualizar</button>
+    </div>
+    <div id="admin-panel-content"><div style="text-align:center;padding:60px;color:var(--text2);font-family:var(--mono)">Clique em Atualizar para carregar o painel.</div></div>
+  </div>
+
 </div><!-- /main -->
 
 <!-- MODALS -->
@@ -737,7 +764,9 @@ tr:first-child td{border-top:none}
 </footer>
 
 </div><!-- /app -->
+
 <script>
+
 
 // ── FEED ──────────────────────────────────────────────────────────────────────
 async function loadFeed(){
@@ -947,7 +976,7 @@ async function loadAttendanceScreenshots(date, cta) {
       w.document.write(`<div style="margin-bottom:12px"><p style="color:#8a8578;font-size:12px;margin-bottom:4px">${s.player}</p>`);
       w.document.write(`<img src="${s.screenshot}" style="max-width:100%;border-radius:8px;border:1px solid #2a2e3a"></div>`);
     });
-    w.document.write('</body></html>');
+    w.document.write('');
   }catch(e){}
 }
 
@@ -1120,7 +1149,8 @@ function initApp(){
   document.getElementById('badge-name').textContent=session.nick;
   const av=document.getElementById('user-avatar');if(av)av.textContent=session.nick?session.nick[0]:'?';
   document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
-  ['stats-tab','shopping-tab','members-tab'].forEach(id=>document.getElementById(id).style.display=isAdmin()?'':'none');
+  ['stats-tab','shopping-tab','members-tab','admin-tab'].forEach(id=>document.getElementById(id).style.display=isAdmin()?'':'none');
+  document.getElementById('ranking-tab').style.display='';
   document.getElementById('mark-all-btns').style.display=isAdmin()?'flex':'none';
   // ver-prints-btn only shown when CTA selected
   document.getElementById('pinfo').style.display=isAdmin()?'none':'block';
@@ -1611,95 +1641,149 @@ document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</op
 const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
 let dashCharts={kills:null,att:null};
 
+
 async function loadDashboard(){
-  if(!isAdmin())return loadDashboardPlayer();
   try{
+    // Greet
+    const nick=currentUser?.nick||'Guerreiro';
+    const el=document.getElementById('dash-greeting');
+    if(el)el.textContent=`Bem-vindo, ${nick}`;
+
+    // For players: simple view; for admin/officer: full stats
+    if(!isAdmin()){
+      const sub=document.getElementById('dash-sub');
+      if(sub)sub.textContent=`Guild Imortais · ${PLAYERS.length} guerreiros`;
+      // Stat cards simples para player
+      const dsEl=document.getElementById('dash-stats');
+      if(dsEl)dsEl.innerHTML=`
+        <div class="stat-card"><div class="stat-icon">⚔️</div><div class="stat-num">${PLAYERS.length}</div><div class="stat-label">Players no guild</div></div>`;
+      // Ranking vazio para player
+      const dr=document.getElementById('dash-ranking');
+      if(dr)dr.innerHTML='<p style="color:var(--text2);font-size:12px;font-family:var(--mono);grid-column:1/-1;padding:10px 0">Ranking disponível apenas para officers.</p>';
+      await loadDashboardCTAs();
+      await loadDashboardAttTable();
+      return;
+    }
+
     const d=await api('GET',`/api/stats?from=2024-01-01&to=2099-12-31`);
     const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
     const totalPresent=d.attendance.filter(a=>a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
     const rgPending=parseInt(d.regear.find(r=>r.status==='pending')?.cnt||0);
     const rgApproved=parseInt(d.regear.find(r=>r.status==='approved')?.cnt||0);
 
-    document.getElementById('dash-hero-stats').innerHTML=`
-      <div class="hero-stat"><span class="hero-stat-num">${d.totalCTAs}</span><div class="hero-stat-lbl">CTAs</div></div>
-      <div class="hero-stat"><span class="hero-stat-num">${totalKills}</span><div class="hero-stat-lbl">Kills totais</div></div>
-      <div class="hero-stat"><span class="hero-stat-num">${totalPresent}</span><div class="hero-stat-lbl">Presenças</div></div>
-      <div class="hero-stat"><span class="hero-stat-num">${rgPending}</span><div class="hero-stat-lbl">Re-gears pendentes</div></div>`;
+    const sub=document.getElementById('dash-sub');
+    if(sub)sub.textContent=`Guild Imortais · ${PLAYERS.length} guerreiros ativos · ${d.totalCTAs} CTAs registradas`;
 
-    document.getElementById('dash-stats').innerHTML=`
-      <div class="stat-card"><span class="stat-icon">⚔</span><span class="stat-num">${d.totalCTAs}</span><div class="stat-label">CTAs registradas</div></div>
-      <div class="stat-card"><span class="stat-icon">💀</span><span class="stat-num">${totalKills}</span><div class="stat-label">Kills do guild</div></div>
-      <div class="stat-card"><span class="stat-icon">🛡</span><span class="stat-num">${totalPresent}</span><div class="stat-label">Presenças</div></div>
-      <div class="stat-card"><span class="stat-icon">⚗</span><span class="stat-num">${rgPending}</span><div class="stat-label">Re-gears pendentes</div></div>
-      <div class="stat-card"><span class="stat-icon">✅</span><span class="stat-num">${rgApproved}</span><div class="stat-label">Re-gears aprovados</div></div>
-      <div class="stat-card"><span class="stat-icon">👥</span><span class="stat-num">${PLAYERS.length}</span><div class="stat-label">Players no guild</div></div>`;
+    // Stat cards — IDs individuais no HTML
+    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+    set('d-ctas',d.totalCTAs||0);
+    set('d-kills',totalKills);
+    set('d-present',totalPresent);
+    set('d-regear',rgPending);
 
-    // Kills ranking
+    // Kills ranking — usa div #dash-ranking do novo HTML
     const kbp=(d.killsByPlayer||d.kills).sort((a,b)=>parseInt(b.total||0)-parseInt(a.total||0));
-    const kMap={};PLAYERS.forEach(p=>kMap[p]=0);kbp.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total||0);});
+    const kMap={};PLAYERS.forEach(p=>kMap[p]=0);
+    kbp.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total||0);});
     const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);
-    document.getElementById('dash-kills-ranking').innerHTML=kSorted.slice(0,12).map((p,i)=>{
-      const n=kMap[p];
-      const cls=i===0?'top1':i===1?'top2':i===2?'top3':n>0?'has-kills':'';
-      const badgeHtml=i===0?`<div class="rank-badge gold">👑 #1</div>`:i===1?`<div class="rank-badge silver">🥈 #2</div>`:i===2?`<div class="rank-badge bronze">🥉 #3</div>`:``;
-      return`<div class="rank-card ${cls}">
-        ${badgeHtml}
-        <div class="rank-avatar">${p[0]}</div>
-        <div class="rank-nick">${p}</div>
-        <div class="rank-kills">${n}</div>
-        <div class="rank-kills-label">kills</div>
-      </div>`;
-    }).join('');
 
-    // Attendance ranking
-    const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});
-    d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt||0);});
-    const aSorted=[...PLAYERS].sort((a,b)=>{
-      const pa=pMap[a],pb=pMap[b];
-      const ta=pa.present+pa.absent,tb=pb.present+pb.absent;
-      const pctA=ta>0?pa.present/ta:0,pctB=tb>0?pb.present/tb:0;
-      return pctB-pctA;
-    });
-    document.getElementById('dash-att-ranking').innerHTML=aSorted.slice(0,12).map((p,i)=>{
-      const s=pMap[p];const total=s.present+s.absent;
-      const pct=total>0?Math.round(s.present/total*100):0;
-      const cls=i===0?'top1':i===1?'top2':i===2?'top3':pct>=70?'has-kills':'';
-      const clrPct=pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';
-      const badgeHtml=i===0?`<div class="rank-badge gold">👑 #1</div>`:i===1?`<div class="rank-badge silver">🥈 #2</div>`:i===2?`<div class="rank-badge bronze">🥉 #3</div>`:``;
-      return`<div class="rank-card ${cls}">
-        ${badgeHtml}
-        <div class="rank-avatar">${p[0]}</div>
-        <div class="rank-nick">${p}</div>
-        <div class="rank-kills" style="color:${clrPct}">${pct}%</div>
-        <div class="rank-kills-label">presença</div>
-        <div class="rank-pct" style="color:var(--text2);font-family:var(--mono);font-size:10px">${s.present}✓ ${s.absent}✗</div>
-      </div>`;
-    }).join('');
+    const AVATAR_COLORS=['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400','#1abc9c','#e74c3c'];
+    const dr=document.getElementById('dash-ranking');
+    if(dr){
+      dr.innerHTML=kSorted.slice(0,12).map((p,i)=>{
+        const n=kMap[p];
+        const rCls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+        const rPosCls=i===0?'r1':i===1?'r2':i===2?'r3':'';
+        const crown=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+        const bgClr=AVATAR_COLORS[i%AVATAR_COLORS.length];
+        return`<div class="rank-card ${rCls}">
+          <div class="rank-pos ${rPosCls}">${crown}</div>
+          <div class="rank-avatar" style="background:linear-gradient(135deg,${bgClr}88,${bgClr})">${p[0]}</div>
+          <div class="rank-nick">${p}</div>
+          <div class="rank-stat">${n}</div>
+          <div class="rank-label">kills</div>
+        </div>`;
+      }).join('');
+    }
 
-    // Charts
-    const top6=kSorted.slice(0,6);
-    const outros=kSorted.slice(6).reduce((s,p)=>s+kMap[p],0);
-    const kL=top6.map(p=>p),kD=top6.map(p=>kMap[p]);
-    if(outros>0){kL.push('Outros');kD.push(outros);}
-    document.getElementById('dash-kills-legend').innerHTML=kL.map((l,i)=>`<span><span class="legend-dot" style="background:${PIZZA_COLORS[i]}"></span>${l}</span>`).join('');
-    if(dashCharts.kills){dashCharts.kills.destroy();}
-    dashCharts.kills=new Chart(document.getElementById('dash-kills-chart'),{type:'doughnut',data:{labels:kL,datasets:[{data:kD,backgroundColor:PIZZA_COLORS.slice(0,kL.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'60%'}});
+    // CTAs de hoje com contagem real
+    await loadDashboardCTAs();
 
-    let tp=0,ta2=0;d.attendance.forEach(r=>{if(r.status==='present')tp+=parseInt(r.cnt||0);else ta2+=parseInt(r.cnt||0);});
-    const sr=Math.max(0,d.totalCTAs*PLAYERS.length-tp-ta2);
-    if(dashCharts.att){dashCharts.att.destroy();}
-    dashCharts.att=new Chart(document.getElementById('dash-att-chart'),{type:'doughnut',data:{labels:['Presentes','Ausentes','Sem registro'],datasets:[{data:[tp,ta2,sr],backgroundColor:['#27ae60','#c0392b','#2a3245'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'60%'}});
+    // Attendance table últimos 7 dias
+    await loadDashboardAttTable();
 
   }catch(e){console.error('Dashboard error:',e);}
 }
 
-async function loadDashboardPlayer(){
-  // Player sees simplified dashboard
-  document.getElementById('dash-hero-stats').innerHTML=`<div class="hero-stat"><span class="hero-stat-num">${PLAYERS.length}</span><div class="hero-stat-lbl">Guerreiros</div></div>`;
-  document.getElementById('dash-stats').innerHTML=`<div class="stat-card"><span class="stat-icon">👥</span><span class="stat-num">${PLAYERS.length}</span><div class="stat-label">Players no guild</div></div>`;
-  document.getElementById('dash-kills-ranking').innerHTML='<p style="color:var(--text2);font-size:12px;font-family:var(--mono)">Ranking disponível apenas para officers.</p>';
-  document.getElementById('dash-att-ranking').innerHTML='';
-  document.getElementById('dash-charts').innerHTML='';
+async function loadDashboardCTAs(){
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const rec=await api('GET',`/api/attendance?date=${today}`);
+    const ctas=['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'];
+    const ids=['dc-1530','dc-1710','dc-1910','dc-2310'];
+    ctas.forEach((c,i)=>{
+      const cnt=rec.filter(r=>r.cta===c&&r.status==='present').length;
+      const el=document.getElementById(ids[i]);
+      if(el)el.innerHTML=`<span style="color:var(--green2);font-family:var(--mono)">${cnt}</span><span style="color:var(--text2);font-size:10px"> / ${PLAYERS.length}</span>`;
+    });
+  }catch(e){}
+}
+
+async function loadDashboardAttTable(){
+  const tbl=document.getElementById('dash-att-table');
+  if(!tbl)return;
+  try{
+    // últimos 7 dias
+    const dates=[];
+    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dates.push(d.toISOString().slice(0,10));}
+    // buscar para cada data
+    const allRecs=await Promise.all(dates.map(dt=>api('GET',`/api/attendance?date=${dt}`).catch(()=>[])));
+    const ctas=['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'];
+    const ctaShort=['15:30','17:10','19:10','23:10'];
+    // montar por player
+    const pMap={};
+    PLAYERS.forEach(p=>{pMap[p]={};dates.forEach(dt=>{ctas.forEach(c=>{pMap[p][dt+'_'+c]=null;});});});
+    dates.forEach((dt,di)=>{
+      (allRecs[di]||[]).forEach(r=>{if(pMap[r.player])pMap[r.player][dt+'_'+r.cta]=r.status;});
+    });
+    // calcular % presença por player para ordenar
+    const pctsArr=PLAYERS.map(p=>{
+      let pr=0,tot=0;
+      dates.forEach(dt=>ctas.forEach(c=>{const v=pMap[p][dt+'_'+c];if(v!==null){tot++;if(v==='present')pr++;}}));
+      return{p,pct:tot>0?Math.round(pr/tot*100):null,pr,tot};
+    }).sort((a,b)=>(b.pct??-1)-(a.pct??-1));
+    // render: mostrar só os últimos 3 dias para não ficar largo, e só 4 CTAs compactas
+    const showDates=dates.slice(-3);
+    tbl.innerHTML=`<table>
+      <thead><tr>
+        <th>Player</th>
+        ${showDates.map(dt=>`<th colspan="4" style="text-align:center;border-left:1px solid var(--border2)">${dt.slice(5)}</th>`).join('')}
+        <th style="border-left:1px solid var(--border2)">Presença</th>
+      </tr>
+      <tr>
+        <th></th>
+        ${showDates.map(()=>ctaShort.map(c=>`<th style="font-size:9px;color:var(--text3)">${c}</th>`).join('')).join('')}
+        <th></th>
+      </tr></thead>
+      <tbody>
+      ${pctsArr.map(({p,pct,pr,tot})=>{
+        const pctColor=pct===null?'var(--text2)':pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';
+        return`<tr>
+          <td><span style="font-family:var(--mono);font-size:12px;color:var(--text)">${p}</span></td>
+          ${showDates.map(dt=>ctas.map(c=>{
+            const v=pMap[p][dt+'_'+c];
+            if(v===null)return`<td style="text-align:center"><span style="color:var(--text3);font-size:11px">·</span></td>`;
+            if(v==='present')return`<td style="text-align:center"><span style="color:var(--green2);font-size:13px">✓</span></td>`;
+            return`<td style="text-align:center"><span style="color:var(--red2);font-size:11px">✗</span></td>`;
+          }).join('')).join('')}
+          <td style="border-left:1px solid var(--border2);text-align:center">
+            <span style="font-family:var(--display);font-size:13px;font-weight:600;color:${pctColor}">${pct!==null?pct+'%':'—'}</span>
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`;
+  }catch(e){tbl.innerHTML='<p style="color:var(--text2);font-size:12px;padding:10px">Erro ao carregar tabela.</p>';}
 }
 
 // Dashboard loaded via showPage
@@ -1707,880 +1791,563 @@ const _origShowPage=showPage;
 showPage=function(p,btn){
   _origShowPage(p,btn);
   if(p==='dashboard')loadDashboard();
+  if(p==='ranking'){setRkWeek();loadRanking();}
+  if(p==='admin')loadAdminPanel();
+  if(p==='attendance'){setTimeout(hookAttendanceOCR,300);}
+  if(p==='kills'){setTimeout(hookKillsOCR,300);}
 };
 
 // Init: show dashboard by default
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
 });
-</script>
-</body>
-</html>
-<script>
 
-// ── FEED ──────────────────────────────────────────────────────────────────────
-async function loadFeed(){
+function setRkWeek(){const now=new Date();const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));document.getElementById('rk-from').value=mon.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
+function setRkMonth(){const now=new Date();const start=new Date(now.getFullYear(),now.getMonth(),1);document.getElementById('rk-from').value=start.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
+function setRkAll(){document.getElementById('rk-from').value='2024-01-01';document.getElementById('rk-to').value='2099-12-31';}
+
+
+// ════════════════════════════════════════════════════════════════════
+// FEATURE 3 — SISTEMA DE RANKING, MVP & MEDALHAS
+// ════════════════════════════════════════════════════════════════════
+
+const RANKING_CONFIG = {
+  pts: { attendance: 1, kill: 2, regear_approved: 0.5 },
+  medals: [
+    { id:'presente10',  icon:'🛡️', name:'Guardião',       desc:'10 presenças',           check:(s)=>s.attendance>=10 },
+    { id:'presente30',  icon:'⚔️', name:'Veterano',        desc:'30 presenças',           check:(s)=>s.attendance>=30 },
+    { id:'presente60',  icon:'🏆', name:'Pilar da Guilda', desc:'60 presenças',           check:(s)=>s.attendance>=60 },
+    { id:'kills10',     icon:'💀', name:'Caçador',         desc:'10 kills',               check:(s)=>s.kills>=10 },
+    { id:'kills50',     icon:'☠️', name:'Exterminador',    desc:'50 kills',               check:(s)=>s.kills>=50 },
+    { id:'kills100',    icon:'💥', name:'Rei do ZvZ',      desc:'100 kills',              check:(s)=>s.kills>=100 },
+    { id:'pct80',       icon:'🎯', name:'Pontual',         desc:'80%+ de presença',       check:(s)=>s.attendancePct>=80 },
+    { id:'pct95',       icon:'🌟', name:'Imortal',         desc:'95%+ de presença',       check:(s)=>s.attendancePct>=95 },
+    { id:'mvp1',        icon:'👑', name:'MVP',             desc:'Top 1 pontuação',        check:(s)=>s.rank===1 },
+    { id:'semana3',     icon:'🔥', name:'Em Chamas',       desc:'MVP 3 semanas seguidas', check:(s)=>s.mvpWeeks>=3 },
+  ],
+  titles: [
+    { minPts:0,   title:'Recruta',          color:'var(--text2)' },
+    { minPts:10,  title:'Guerreiro',         color:'var(--text)' },
+    { minPts:30,  title:'Veterano Imortal',  color:'var(--silver2)' },
+    { minPts:60,  title:'Guardião Imortal',  color:'var(--gold)' },
+    { minPts:120, title:'Lenda da Guilda',   color:'var(--gold2)' },
+    { minPts:200, title:'Rei do ZvZ',        color:'#ff6b6b' },
+    { minPts:300, title:'⚔ O Imortal ⚔',    color:'var(--gold3)' },
+  ]
+};
+
+function getRankingTitle(pts){
+  const t=[...RANKING_CONFIG.titles].reverse().find(t=>pts>=t.minPts);
+  return t||RANKING_CONFIG.titles[0];
+}
+
+async function computeRankingData(from,to){
+  const [statsAll, statsRange] = await Promise.all([
+    api('GET',`/api/stats?from=2024-01-01&to=2099-12-31`),
+    api('GET',`/api/stats?from=${from}&to=${to}`)
+  ]);
+
+  const players = PLAYERS.map(nick=>{
+    // All-time kills
+    const killsRec = statsAll.kills.find(k=>k.player===nick);
+    const kills = parseInt(killsRec?.total||0);
+    // Range kills
+    const killsR = parseInt((statsRange.kills.find(k=>k.player===nick))?.total||0);
+    // All-time attendance
+    const attP = parseInt(statsAll.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0));
+    const attA = parseInt(statsAll.attendance.filter(a=>a.player===nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0));
+    const attTotal = attP+attA;
+    const attendancePct = attTotal>0?Math.round(attP/attTotal*100):0;
+    // Range attendance
+    const attPR = parseInt(statsRange.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0));
+    // Range re-gear approved
+    const rgR = parseInt((statsRange.regear.find(r=>r.status==='approved'))?.cnt||0);
+
+    const ptsRange = attPR*RANKING_CONFIG.pts.attendance + killsR*RANKING_CONFIG.pts.kill + rgR*RANKING_CONFIG.pts.regear_approved;
+    const ptsAll   = attP*RANKING_CONFIG.pts.attendance + kills*RANKING_CONFIG.pts.kill;
+
+    const medals = RANKING_CONFIG.medals.filter(m=>m.check({attendance:attP,kills,attendancePct,rank:0,mvpWeeks:0}));
+    const title = getRankingTitle(ptsAll);
+
+    return { nick, kills, killsR, attP, attA, attTotal, attendancePct, attPR, rgR, ptsRange, ptsAll, medals, title };
+  });
+
+  players.sort((a,b)=>b.ptsRange-a.ptsRange);
+  players.forEach((p,i)=>{
+    p.rank=i+1;
+    if(p.rank===1) p.medals.push(RANKING_CONFIG.medals.find(m=>m.id==='mvp1'));
+  });
+
+  return players;
+}
+
+async function loadRanking(){
+  const wrap = document.getElementById('page-ranking');
+  if(!wrap)return;
+
+  // Date range pickers
+  const fromEl=document.getElementById('rk-from');
+  const toEl=document.getElementById('rk-to');
+  if(!fromEl||!toEl)return;
+
+  const now=new Date();
+  const mon=new Date(now); mon.setDate(now.getDate()-now.getDay()+1);
+  const from=fromEl.value||(mon.toISOString().slice(0,10));
+  const to=toEl.value||(now.toISOString().slice(0,10));
+  if(!fromEl.value)fromEl.value=from;
+  if(!toEl.value)toEl.value=to;
+
+  document.getElementById('rk-content').innerHTML=`<div style="text-align:center;padding:40px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Calculando ranking...</div>`;
+
   try{
-    if(!session.nick){document.getElementById('feed-list').innerHTML='<p style="color:var(--text2);font-size:13px;text-align:center;padding:40px">Faça login para ver o feed.</p>';return;}
-    const rows=await api('GET','/api/news');
-    const unread=rows.filter(n=>!n.is_read);
-    const badge=document.getElementById('feed-badge');
-    if(badge){
-      if(unread.length>0){badge.style.display='inline';badge.textContent=unread.length;}
-      else badge.style.display='none';
-    }
-    if(!rows.length){
-      document.getElementById('feed-list').innerHTML='<p style="color:var(--text2);font-size:13px;text-align:center;padding:40px">Nenhuma notícia ainda.</p>';
-      return;
-    }
-    let html='';
-    rows.forEach(n=>{
-      const isPersonal=!!n.target_nick;
-      const unreadCls=n.is_read?'':'unread';
-      const personalCls=isPersonal?'personal':'';
-      const date=new Date(n.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      const bodyHtml=n.body?n.body.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold2)">$1</strong>'):'';
-      html+=`<div class="news-card ${unreadCls} ${personalCls}" id="news-${n.id}">
-        ${isPersonal?'<div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🔔 Notificação pessoal</div>':''}
-        <div class="news-title">${n.title}</div>
-        ${bodyHtml?`<div class="news-body">${bodyHtml}</div>`:''}
-        ${n.image?`<img src="${n.image}" class="news-img">`:''}
-        <div class="news-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span>por ${n.author} · ${date}</span>
-          <div style="display:flex;gap:6px">
-            ${!n.is_read?`<button class="btn btn-ol btn-sm" onclick="markNewsRead(${n.id})">Marcar como lida</button>`:'<span style="color:var(--green);font-size:11px">✓ Lida</span>'}
-            ${isAdmin()?`<button class="btn-del" onclick="deleteNews(${n.id})">×</button>`:''}
-          </div>
+    const players = await computeRankingData(from,to);
+    const mvp=players[0];
+    const AVATAR_COLORS=['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400','#1abc9c','#e74c3c','#e67e22','#16a085'];
+
+    document.getElementById('rk-content').innerHTML=`
+      <!-- MVP CARD -->
+      <div style="background:linear-gradient(135deg,rgba(201,162,39,.12),var(--bg2));border:1px solid var(--gold);border-radius:14px;padding:24px;margin-bottom:20px;text-align:center;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center top,rgba(201,162,39,.08),transparent 70%)"></div>
+        <div style="font-family:var(--display);font-size:10px;color:var(--gold-dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px">👑 MVP da Semana</div>
+        <div style="width:72px;height:72px;border-radius:14px;background:linear-gradient(135deg,var(--gold-dim),var(--gold));display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:28px;font-weight:700;color:var(--bg);margin:0 auto 12px;box-shadow:0 0 30px rgba(201,162,39,.4)">${mvp.nick[0]}</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:700;color:var(--gold2);letter-spacing:2px">${mvp.nick}</div>
+        <div style="font-size:11px;margin-top:4px;color:${mvp.title.color};font-family:var(--display);letter-spacing:1px">${mvp.title.title}</div>
+        <div style="font-family:var(--display);font-size:36px;font-weight:700;color:var(--gold3);margin:12px 0 4px">${mvp.ptsRange.toFixed(1)}</div>
+        <div style="font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;font-family:var(--display)">Pontos no período</div>
+        <div style="display:flex;justify-content:center;gap:16px;margin-top:16px">
+          <div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--green2)">${mvp.attPR}</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Presenças</div></div>
+          <div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--red2)">${mvp.killsR}</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Kills</div></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:6px;margin-top:14px;flex-wrap:wrap">
+          ${mvp.medals.filter(Boolean).map(m=>`<span title="${m.name}: ${m.desc}" style="font-size:20px;cursor:default">${m.icon}</span>`).join('')}
+        </div>
+      </div>
+
+      <!-- RANKING TABLE -->
+      <div class="sec">
+        <div class="sec-title">Ranking do Período</div>
+        <div class="tw">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Player</th><th>Título</th><th>Pts</th>
+              <th>Presenças</th><th>Kills</th><th>%</th><th>Medalhas</th>
+            </tr></thead>
+            <tbody>
+              ${players.map((p,i)=>{
+                const bg=i===0?'rgba(201,162,39,.06)':i===1?'rgba(184,200,216,.03)':i===2?'rgba(205,127,50,.03)':'';
+                const posIcon=i===0?'👑':i===1?'🥈':i===2?'🥉':`<span style="color:var(--text2)">${i+1}</span>`;
+                const clrBg=AVATAR_COLORS[i%AVATAR_COLORS.length];
+                return`<tr style="background:${bg}">
+                  <td style="font-family:var(--display);font-size:14px;text-align:center">${posIcon}</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,${clrBg}88,${clrBg});display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:11px;font-weight:700;color:var(--bg);flex-shrink:0">${p.nick[0]}</div>
+                      <span style="font-family:var(--mono);font-size:12px">${p.nick}</span>
+                    </div>
+                  </td>
+                  <td><span style="font-size:11px;color:${p.title.color};font-family:var(--display)">${p.title.title}</span></td>
+                  <td><span style="font-family:var(--display);font-size:15px;font-weight:700;color:var(--gold2)">${p.ptsRange.toFixed(1)}</span></td>
+                  <td style="text-align:center"><span style="color:var(--green2);font-family:var(--mono)">${p.attPR}</span></td>
+                  <td style="text-align:center"><span style="color:var(--red2);font-family:var(--mono)">${p.killsR}</span></td>
+                  <td style="text-align:center"><span style="font-family:var(--mono);color:${p.attendancePct>=70?'var(--green2)':p.attendancePct>=40?'var(--gold2)':'var(--red2)'}">${p.attendancePct}%</span></td>
+                  <td><div style="display:flex;gap:3px;flex-wrap:wrap">${p.medals.filter(Boolean).slice(0,5).map(m=>`<span title="${m.name}: ${m.desc}" style="font-size:14px;cursor:default">${m.icon}</span>`).join('')}</div></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LEGEND DE MEDALHAS -->
+      <div class="sec">
+        <div class="sec-title">Medalhas & Conquistas</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+          ${RANKING_CONFIG.medals.map(m=>`
+            <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px">
+              <span style="font-size:24px">${m.icon}</span>
+              <div><div style="font-family:var(--display);font-size:12px;color:var(--gold2)">${m.name}</div><div style="font-size:11px;color:var(--text2)">${m.desc}</div></div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- TÍTULOS -->
+      <div class="sec">
+        <div class="sec-title">Hierarquia de Títulos</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+          ${RANKING_CONFIG.titles.map(t=>`
+            <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-family:var(--display);font-size:12px;color:${t.color}">${t.title}</span>
+              <span style="font-size:10px;color:var(--text2);font-family:var(--mono)">${t.minPts}+ pts</span>
+            </div>`).join('')}
         </div>
       </div>`;
-    });
-    document.getElementById('feed-list').innerHTML=html;
   }catch(e){
-    console.error('Feed error:', e);
-    document.getElementById('feed-list').innerHTML=`<p style="color:var(--red);font-size:13px">Erro ao carregar feed: ${e.message}</p>`;
+    document.getElementById('rk-content').innerHTML=`<div class="alert alert-e" style="display:block">Erro ao carregar ranking: ${e.message}</div>`;
   }
 }
 
-async function markNewsRead(id){
+
+// ════════════════════════════════════════════════════════════════════
+// FEATURE 5 — OCR INTELIGENTE DE PRINTS
+// ════════════════════════════════════════════════════════════════════
+
+let ocrWorker = null;
+let ocrReady = false;
+
+async function initOCR(){
+  if(ocrReady||ocrWorker)return;
   try{
-    await api('POST',`/api/news/${id}/read`);
-    loadFeed();
-  }catch(e){}
+    // Tesseract.js via CDN — loaded lazily
+    if(typeof Tesseract==='undefined'){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    ocrReady=true;
+  }catch(e){console.warn('OCR não disponível:',e);}
 }
 
-async function deleteNews(id){
-  try{await api('DELETE',`/api/news/${id}`);loadFeed();}catch(e){}
-}
-
-function openNewsModal(){
-  newsImgData=null;
-  document.getElementById('news-title').value='';
-  document.getElementById('news-body').value='';
-  document.getElementById('news-img-prev').style.display='none';
-  document.getElementById('news-target').value='';
-  document.getElementById('modal-news').classList.add('open');
-}
-function closeNewsModal(){document.getElementById('modal-news').classList.remove('open');}
-function handleNewsImg(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{newsImgData=ev.target.result;const img=document.getElementById('news-img-prev');img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);
-}
-async function saveNews(){
-  const title=document.getElementById('news-title').value.trim();
-  const body=document.getElementById('news-body').value.trim();
-  const target=document.getElementById('news-target').value||null;
-  if(!title){alert('Título obrigatório');return;}
+async function runOCR(imageFile){
+  await initOCR();
+  if(!ocrReady)return null;
   try{
-    await api('POST','/api/news',{title,body,image:newsImgData,target_nick:target});
-    closeNewsModal();loadFeed();
-  }catch(e){alert(e.message);}
+    const result=await Tesseract.recognize(imageFile,'eng',{logger:()=>{}});
+    return result.data.text;
+  }catch(e){console.warn('OCR error:',e);return null;}
 }
 
-// ── BUILDS ────────────────────────────────────────────────────────────────────
-async function loadBuilds(){
-  try{
-    const rows=await api('GET','/api/builds');
-    allBuildsCache=rows;
-    filterBuilds(currentBuildFilter,document.getElementById('tab-'+currentBuildFilter.toLowerCase()));
-  }catch(e){}
+// Extrai nicks do texto OCR comparando com PLAYERS
+function extractPlayersFromOCR(text){
+  if(!text)return[];
+  const upper=text.toUpperCase();
+  const found=[];
+  for(const p of PLAYERS){
+    // Fuzzy: aceita se o nick aparecer com até 1 char de erro
+    if(upper.includes(p)){
+      found.push(p);
+    }
+  }
+  return[...new Set(found)];
 }
 
-function filterBuilds(genre,btn){
-  currentBuildFilter=genre;
-  document.querySelectorAll('#page-builds .nav-btn').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  const filtered=allBuildsCache.filter(b=>b.genre===genre);
-  if(!filtered.length){
-    document.getElementById('builds-list').innerHTML=`<p style="color:var(--text2);font-size:13px;grid-column:1/-1">Nenhuma build ${genre} cadastrada ainda.</p>`;
+// OCR para kill feed — detecta nicks e sugere preenchimento
+async function ocrKillFeed(file, statusEl){
+  if(!file)return null;
+  if(statusEl)statusEl.innerHTML=`<span class="sp"></span> Lendo print com OCR...`;
+  const text=await runOCR(file);
+  const found=extractPlayersFromOCR(text||'');
+  if(statusEl){
+    if(found.length>0){
+      statusEl.innerHTML=`<span style="color:var(--green2)">✓ OCR detectou ${found.length} player(s):</span> <span style="font-family:var(--mono);color:var(--gold2)">${found.join(', ')}</span>`;
+    } else {
+      statusEl.innerHTML=`<span style="color:var(--text2)">OCR não detectou nicks conhecidos no print.</span>`;
+    }
+  }
+  return found;
+}
+
+// OCR para print de presença — detecta nicks e marca checkboxes
+async function ocrAttendancePrint(file){
+  const statusEl=document.getElementById('ocr-att-status');
+  if(statusEl)statusEl.innerHTML=`<span class="sp"></span> Lendo print com OCR...`;
+  const text=await runOCR(file);
+  const found=extractPlayersFromOCR(text||'');
+
+  if(found.length===0){
+    if(statusEl)statusEl.innerHTML=`<span style="color:var(--gold2)">⚠ OCR não reconheceu nenhum nick. Marque manualmente.</span>`;
     return;
   }
-  let html='';
-  filtered.forEach(b=>{
-    const parts=b.parts?b.parts.split('\n').filter(Boolean):[];
-    html+=`<div class="build-card">
-      ${b.image?`<img src="${b.image}" class="build-card-img" onclick="viewImg('${b.image}')" style="cursor:pointer" title="Clique para ampliar">`:'<div class="build-card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:12px">Sem imagem</div>'}
-      <div class="build-card-body">
-        <div class="build-card-name">${b.name}</div>
-        <div class="build-card-genre">${b.genre}</div>
-        ${parts.length?`<ul class="build-parts">${parts.map(p=>{const[item,...rest]=p.split(' ');const tier=rest.join(' ');return`<li><span>${item}</span><span style="color:var(--gold2)">${tier}</span></li>`;}).join('')}</ul>`:''}
-        ${isAdmin()?`<button class="btn-del" style="margin-top:10px" onclick="deleteBuild(${b.id})">Remover</button>`:''}
-      </div>
-    </div>`;
-  });
-  document.getElementById('builds-list').innerHTML=html;
+
+  let marked=0;
+  for(const nick of found){
+    // Find player row and click the "✓" present button
+    const rows=document.querySelectorAll('.player-row');
+    for(const row of rows){
+      if(row.querySelector('.pname')?.textContent.trim()===nick){
+        const btn=row.querySelector('.bp');
+        if(btn&&!btn.classList.contains('on')){
+          btn.click();
+          marked++;
+        }
+        break;
+      }
+    }
+  }
+  if(statusEl)statusEl.innerHTML=`<span style="color:var(--green2)">✓ OCR marcou <strong>${marked}</strong> player(s): <span style="font-family:var(--mono);color:var(--gold2)">${found.join(', ')}</span></span>`;
 }
 
-function openBuildModal(){
-  buildImgData=null;
-  document.getElementById('build-name').value='';
-  document.getElementById('build-parts').value='';
-  document.getElementById('build-img-prev').style.display='none';
-  document.getElementById('modal-build').classList.add('open');
-}
-function closeBuildModal(){document.getElementById('modal-build').classList.remove('open');}
-function handleBuildImg(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{buildImgData=ev.target.result;const img=document.getElementById('build-img-prev');img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);
-}
-async function saveBuild(){
-  const name=document.getElementById('build-name').value.trim();
-  const genre=document.getElementById('build-genre').value;
-  const parts=document.getElementById('build-parts').value.trim();
-  if(!name){alert('Nome obrigatório');return;}
-  try{
-    await api('POST','/api/builds',{name,genre,image:buildImgData,parts});
-    closeBuildModal();loadBuilds();
-  }catch(e){alert(e.message);}
-}
-async function deleteBuild(id){
-  try{await api('DELETE',`/api/builds/${id}`);loadBuilds();}catch(e){}
+// Hook: quando o upload da CTA recebe imagem → rodar OCR para attendance
+function hookAttendanceOCR(){
+  // Inject OCR status div after the upload area
+  const uplArea=document.querySelector('#att-section .upl');
+  if(!uplArea)return;
+  if(document.getElementById('ocr-att-status'))return;
+  const statusDiv=document.createElement('div');
+  statusDiv.id='ocr-att-status';
+  statusDiv.style.cssText='margin-top:8px;font-size:12px;min-height:20px;padding:6px 0;font-family:var(--mono)';
+  uplArea.parentNode.insertBefore(statusDiv, uplArea.nextSibling);
+
+  // Override the file input handler to also trigger OCR
+  const fileInput=uplArea.querySelector('input[type=file]');
+  if(fileInput){
+    const origChange=fileInput.onchange;
+    fileInput.onchange=async function(e){
+      if(origChange)origChange.call(this,e);
+      if(e.target.files[0])await ocrAttendancePrint(e.target.files[0]);
+    };
+  }
 }
 
-// ── VIDEOS ────────────────────────────────────────────────────────────────────
-function getYoutubeId(url){
-  const m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
-  return m?m[1]:null;
-}
-function getYoutubeThumbnail(url){
-  const id=getYoutubeId(url);
-  return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:null;
-}
+// Hook: OCR nos prints de kill feed
+function hookKillsOCR(){
+  const uplArea=document.getElementById('kill-upl-area');
+  if(!uplArea)return;
+  if(document.getElementById('ocr-kill-status'))return;
+  const statusDiv=document.createElement('div');
+  statusDiv.id='ocr-kill-status';
+  statusDiv.style.cssText='margin-top:8px;font-size:12px;min-height:20px;padding:6px 0;font-family:var(--mono)';
+  uplArea.parentNode.insertBefore(statusDiv, uplArea.nextSibling);
 
-async function loadVideos(){
-  try{
-    const rows=await api('GET','/api/videos');
-    if(!rows.length){document.getElementById('videos-list').innerHTML='<p style="color:var(--text2);font-size:13px;grid-column:1/-1">Nenhum vídeo cadastrado ainda.</p>';return;}
-    let html='';
-    rows.forEach(v=>{
-      const thumb=getYoutubeThumbnail(v.youtube_url);
-      html+=`<div class="video-card" onclick="window.open('${v.youtube_url}','_blank')">
-        <div style="position:relative">
-          ${thumb?`<img src="${thumb}" class="video-thumb">`:'<div class="video-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text2)">▶</div>'}
-          <div class="video-play">▶</div>
-        </div>
-        <div class="video-card-body">
-          <div class="video-title">${v.title}</div>
-          ${v.description?`<div class="video-desc">${v.description}</div>`:''}
-          <div style="font-size:10px;color:var(--text2);margin-top:6px;font-family:var(--mono)">por ${v.author}</div>
-          ${isAdmin()?`<button class="btn-del" style="margin-top:8px" onclick="event.stopPropagation();deleteVideo(${v.id})">Remover</button>`:''}
-        </div>
-      </div>`;
-    });
-    document.getElementById('videos-list').innerHTML=html;
-  }catch(e){}
-}
-
-function openVideoModal(){
-  document.getElementById('video-title').value='';
-  document.getElementById('video-desc').value='';
-  document.getElementById('video-url').value='';
-  document.getElementById('modal-video').classList.add('open');
-}
-function closeVideoModal(){document.getElementById('modal-video').classList.remove('open');}
-async function saveVideo(){
-  const title=document.getElementById('video-title').value.trim();
-  const description=document.getElementById('video-desc').value.trim();
-  const youtube_url=document.getElementById('video-url').value.trim();
-  if(!title||!youtube_url){alert('Título e URL obrigatórios');return;}
-  try{
-    await api('POST','/api/videos',{title,description,youtube_url});
-    closeVideoModal();loadVideos();
-  }catch(e){alert(e.message);}
-}
-async function deleteVideo(id){
-  try{await api('DELETE',`/api/videos/${id}`);loadVideos();}catch(e){}
-}
-let newsImgData=null,buildImgData=null,currentBuildFilter='Ranged',allBuildsCache=[];
-
-// ── ATTENDANCE SCREENSHOTS (admin view) ───────────────────────────────────────
-async function loadAttendanceScreenshots(date, cta) {
-  if(!isAdmin())return;
-  try{
-    const data=await api('GET',`/api/attendance?date=${date}`);
-    const shots=(data[cta]||{}).screenshots||[];
-    if(!shots.length){alert('Nenhum print enviado para esta CTA.');return;}
-    const w=window.open('','_blank');
-    w.document.write('<html><body style="background:#0a0c10;padding:20px;font-family:sans-serif">');
-    w.document.write(`<h2 style="color:#c9a227;margin-bottom:16px">Prints — ${cta} — ${date}</h2>`);
-    shots.forEach(s=>{
-      w.document.write(`<div style="margin-bottom:12px"><p style="color:#8a8578;font-size:12px;margin-bottom:4px">${s.player}</p>`);
-      w.document.write(`<img src="${s.screenshot}" style="max-width:100%;border-radius:8px;border:1px solid #2a2e3a"></div>`);
-    });
-    w.document.write('</body></html>');
-  }catch(e){}
-}
-
-// ── KILL MULTIPLE SCREENSHOTS ─────────────────────────────────────────────────
-let killImgs=[];
-function handleKillImgs(e){
-  const files=[...e.target.files];
-  if(!files.length)return;
-  killImgs=[];
-  const previews=document.getElementById('kill-previews');
-  previews.innerHTML='';
-  const count=document.getElementById('kill-imgs-count');
-  let loaded=0;
-  files.forEach((f,i)=>{
-    const r=new FileReader();
-    r.onload=ev=>{
-      killImgs[i]=ev.target.result;
-      const img=document.createElement('img');
-      img.src=ev.target.result;
-      img.style.cssText='width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer';
-      img.onclick=()=>viewImg(ev.target.result);
-      previews.appendChild(img);
-      loaded++;
-      if(loaded===files.length){
-        count.style.display='block';
-        count.textContent=files.length+' print'+(files.length>1?'s':'')+' selecionado'+(files.length>1?'s':'');
+  const fileInput=uplArea.querySelector('input[type=file]');
+  if(fileInput){
+    const origChange=fileInput.onchange;
+    fileInput.onchange=async function(e){
+      if(origChange)origChange.call(this,e);
+      const files=Array.from(e.target.files||[]);
+      if(files.length>0){
+        const statusEl=document.getElementById('ocr-kill-status');
+        // OCR on first image only (kill count display)
+        await ocrKillFeed(files[0], statusEl);
       }
     };
-    r.readAsDataURL(f);
-  });
-}
-
-// ── UTC CLOCK ─────────────────────────────────────────────────────────────────
-function startUTCClock(){
-  function update(){
-    const now=new Date();
-    const h=String(now.getUTCHours()).padStart(2,'0');
-    const m=String(now.getUTCMinutes()).padStart(2,'0');
-    const s=String(now.getUTCSeconds()).padStart(2,'0');
-    const el=document.getElementById('utc-clock');
-    if(el)el.textContent=`${h}:${m}:${s} UTC`;
   }
-  update();setInterval(update,1000);
 }
 
-const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETE','GAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
-const BUILDS={
-  'Ranged':{
-    'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],
-    'Fire':['Capacete','Peito','Bota','Canção da Alvorada'],
-    'Caller':['Capacete','Peito','Bota','Bruxo','Lume Críptico'],
-    'Frost':['Capacete','Peito','Bota','Prisma'],
-    'Piercers':['Capacete','Peito','Bota','Caça Espíritos','Execrado','Brumário'],
-    'Cravadas':['Capacete','Peito','Bota','Cravadas'],
-  },
-  'Melee':{
-    'Caller':['Capacete','Peito','Bota','Maça de 1 mão','Escudo'],
-    'Bracers':['Capacete','Peito','Bota','Battle Bracers'],
-    'Cravadas':['Capacete','Peito','Bota','Cravadas'],
-    'Frost':['Capacete','Peito','Bota','Prisma'],
-    'Quebra-reinos':['Capacete','Peito','Bota','Quebrareinos'],
-    'Piercer':['Capacete','Peito','Bota','Caça Espíritos'],
-    'Oculto':['Capacete','Peito','Bota','Oculto'],
-  }
-};
-// Flat lookup for shopping list
-function getBuildParts(genre, build){
-  return (BUILDS[genre]&&BUILDS[genre][build])||[];
-}
-function getAllBuilds(){
-  const out={};
-  Object.entries(BUILDS).forEach(([genre,subs])=>{
-    Object.entries(subs).forEach(([sub,parts])=>{
-      out[`${genre}::${sub}`]=parts;
-    });
-  });
-  return out;
-}
-const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
 
-let session={role:null,nick:null,adminPass:null,officerNick:null};
-let selectedCTA=null,imgs=[null,null,null],attData={},statsCache=null;
-let charts={killsGuild:null,attGuild:null,rgGuild:null,radar:null};
-let selectedBuild=null,selectedDeathRole=null,membersCache=[];
-let deactNick=null;
+// ════════════════════════════════════════════════════════════════════
+// FEATURE 6 — PAINEL ADMIN & EXPORTAÇÃO EXCEL
+// ════════════════════════════════════════════════════════════════════
 
-const isAdmin=()=>session.role==='admin';
-const today=()=>new Date().toISOString().split('T')[0];
-const inactiveNicks=()=>new Set(membersCache.filter(m=>!m.active).map(m=>m.nick));
+async function loadAdminPanel(){
+  const wrap=document.getElementById('admin-panel-content');
+  if(!wrap)return;
+  wrap.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Carregando painel...</div>`;
 
-function authHeaders(){
-  const h={'Content-Type':'application/json'};
-  if(session.adminPass){
-    h['x-admin-pass']=session.adminPass;
-    if(session.officerNick)h['x-officer-nick']=session.officerNick;
-  }
-  if(session.nick&&session.role==='player')h['x-player-nick']=session.nick;
-  return h;
-}
-async function api(method,path,body){
-  const opts={method,headers:authHeaders()};
-  if(body)opts.body=JSON.stringify(body);
-  const r=await fetch(path,opts);const data=await r.json();
-  if(!r.ok)throw new Error(data.error||'Erro desconhecido');
-  return data;
-}
-
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
-function toggleLoginType(){
-  const t=document.getElementById('login-type').value;
-  document.getElementById('field-nick-player').style.display=t==='player'?'block':'none';
-  document.getElementById('field-nick-officer').style.display=t==='officer'?'block':'none';
-  document.getElementById('field-pass').style.display=t!=='player'?'block':'none';
-  document.getElementById('field-player-pass').style.display='none';
-}
-document.getElementById('login-nick').addEventListener('change', () => {
-  // Reset password field when nick changes
-  document.getElementById('field-player-pass').style.display='none';
-  document.getElementById('login-player-pass').value='';
-});
-async function doLogin(){
-  const type=document.getElementById('login-type').value;
-  const nick=type==='player'?document.getElementById('login-nick').value:document.getElementById('login-officer-nick').value.trim().toUpperCase();
-  const password=type==='player'?document.getElementById('login-player-pass').value:document.getElementById('login-pass').value;
-  const errEl=document.getElementById('login-err'),btn=document.getElementById('login-btn');
-  errEl.style.display='none';btn.innerHTML='<span class="sp"></span>Entrando...';btn.disabled=true;
   try{
-    const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,nick,password,phone:document.getElementById('login-player-phone')?.value||null})});
-    const data=await res.json();
-    if(!res.ok){
-      // Handle first access and password required
-      if(data.firstAccess){
-        document.getElementById('field-player-pass').style.display='block';
-        document.getElementById('player-pass-label').textContent='Criar senha (primeiro acesso)';
-        document.getElementById('player-pass-hint').textContent='Escolha uma senha para seu acesso futuro.';
-        document.getElementById('login-player-pass').focus();
-        errEl.textContent='';errEl.style.display='none';
-        btn.innerHTML='Entrar';btn.disabled=false;return;
-      }
-      if(data.needsPassword){
-        document.getElementById('field-player-pass').style.display='block';
-        document.getElementById('player-pass-label').textContent='Senha';
-        document.getElementById('player-pass-hint').textContent='';
-        document.getElementById('login-player-pass').focus();
-        errEl.textContent='';errEl.style.display='none';
-        btn.innerHTML='Entrar';btn.disabled=false;return;
-      }
-      throw new Error(data.error);
-    }
-    session={role:data.role,nick:data.nick,adminPass:password,officerNick:type==='officer'?data.nick:null};
-    initApp();
-  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
-  finally{btn.innerHTML='Entrar';btn.disabled=false;}
-}
-function logout(){
-  session={role:null,nick:null,adminPass:null,officerNick:null};
-  selectedCTA=null;imgs=[null,null,null];attData={};statsCache=null;membersCache=[];
-  selectedBuild=null;selectedDeathRole=null;
-  document.getElementById('login-pass').value='';document.getElementById('login-officer-nick').value='';
-  document.getElementById('login-err').style.display='none';
-  document.getElementById('main-screen').style.display='none';
-  document.getElementById('login-screen').style.display='block';
-  document.getElementById('att-section').style.display='none';
-  document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
-  resetOvercharge();resetDeath();
-}
-function initApp(){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('main-screen').style.display='block';
-  document.getElementById('badge-name').textContent=session.nick;
-  document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
-  ['stats-tab','shopping-tab','members-tab'].forEach(id=>document.getElementById(id).style.display=isAdmin()?'':'none');
-  document.getElementById('mark-all-btns').style.display=isAdmin()?'flex':'none';
-  // ver-prints-btn only shown when CTA selected
-  document.getElementById('pinfo').style.display=isAdmin()?'none':'block';
-  document.getElementById('kill-player-fi').style.display=isAdmin()?'block':'none';
-  document.getElementById('rg-player-fi').style.display=isAdmin()?'block':'none';
-  document.getElementById('rg-list-title').textContent=isAdmin()?'Todos os pedidos':'Meus pedidos';
-  document.getElementById('rg-filter-row').style.display=isAdmin()?'flex':'none';
-  if(isAdmin()){
-    ['kill-player','rg-player','mb-nick'].forEach(id=>{
-      const el=document.getElementById(id);if(el)el.innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
-    });
-    document.getElementById('radar-player').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
-  }
-  buildBuildsGrids();
-  const t=today();['att-date','kill-date','rg-date','st-from','st-to','shop-from','shop-to','mb-joined','deact-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=t;});
-  if(isAdmin())api('GET','/api/members').then(m=>{membersCache=m;}).catch(()=>{});
-  loadAttendanceCounts();loadKillsTable();loadRegearList();
-  if(isAdmin())loadStats();
-  startUTCClock();
-  // Show admin controls for new sections
-  ['feed-admin-bar','add-build-btn','add-video-btn'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.style.display=isAdmin()?'flex':'none';
-  });
-  // Populate news target dropdown
-  if(isAdmin()){
-    const sel=document.getElementById('news-target');
-    if(sel&&sel.options.length<=1){
-      PLAYERS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
-    }
-  }
-  // Load feed after session is ready
-  setTimeout(loadFeed, 100);
-}
+    const [statsAll, statsWeek, statsMonth]=await Promise.all([
+      api('GET',`/api/stats?from=2024-01-01&to=2099-12-31`),
+      api('GET',`/api/stats?from=${getDateOffset(-7)}&to=${getTodayStr()}`),
+      api('GET',`/api/stats?from=${getDateOffset(-30)}&to=${getTodayStr()}`)
+    ]);
 
-// ── BUILDS ────────────────────────────────────────────────────────────────────
-function buildBuildsGrids(){
-  function genreHTML(onclickFn, prefix){
-    let html='';
-    Object.entries(BUILDS).forEach(([genre,subs])=>{
-      html+=`<div style="margin-bottom:12px">
-        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;padding-left:2px;border-left:2px solid var(--gold);padding-left:8px">${genre}</div>
-        <div class="builds-grid" style="margin-bottom:0">`;
-      Object.keys(subs).forEach(sub=>{
-        html+=`<div class="build-btn" onclick="${onclickFn}('${genre}','${sub}')" id="${prefix}-${genre}-${sub}">${sub}</div>`;
-      });
-      html+='</div></div>';
-    });
-    return html;
-  }
-  document.getElementById('death-builds-grid').innerHTML=genreHTML('selectDeathRole','death-build');
-  document.getElementById('builds-grid').innerHTML=genreHTML('selectBuild','build');
-}
-function selectDeathRole(genre,build){
-  selectedDeathRole={genre,build};
-  document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));
-  const el=document.getElementById(`death-build-${genre}-${build}`);
-  if(el)el.classList.add('active-death');
-}
-function toggleDeath(){
-  const checked=document.getElementById('death-check').checked;
-  document.getElementById('death-section').classList.toggle('visible',checked);
-  if(!checked){selectedDeathRole=null;document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));}
-}
-function selectBuild(genre,build){
-  selectedBuild={genre,build};
-  document.querySelectorAll('.build-btn').forEach(b=>b.classList.remove('active'));
-  const el=document.getElementById(`build-${genre}-${build}`);
-  if(el)el.classList.add('active');
-  document.getElementById('parts-build-name').textContent=`${genre} · ${build}`;
-  const parts=(BUILDS[genre]&&BUILDS[genre][build])||[];
-  document.getElementById('parts-grid').innerHTML=parts.map(p=>
-    `<label class="part-check" id="part-${p.replace(/\s/g,'_')}"><input type="checkbox" value="${p}" onchange="togglePartCheck(this)"> <span>${p}</span></label>`
-  ).join('');
-  document.getElementById('parts-section').style.display='block';
-}
-function togglePartCheck(cb){cb.closest('.part-check').classList.toggle('checked',cb.checked);}
-function toggleOvercharge(){
-  const checked=document.getElementById('oc-check').checked;
-  document.getElementById('oc-section').classList.toggle('visible',checked);
-  if(!checked)resetOvercharge();
-}
-function resetOvercharge(){
-  selectedBuild=null;
-  document.getElementById('oc-check').checked=false;
-  document.getElementById('oc-section').classList.remove('visible');
-  document.getElementById('parts-section').style.display='none';
-  document.querySelectorAll('.build-btn').forEach(b=>b.classList.remove('active'));
-}
-function resetDeath(){
-  selectedDeathRole=null;
-  document.getElementById('death-check').checked=false;
-  document.getElementById('death-section').classList.remove('visible');
-  document.querySelectorAll('[id^="death-build-"]').forEach(b=>b.classList.remove('active-death'));
-}
-function getOverchargeData(){
-  const checked=document.getElementById('oc-check').checked;
-  if(!checked)return{overcharge:false,overcharge_build:null,overcharge_genre:null,overcharge_parts:[]};
-  const parts=[...document.querySelectorAll('.part-check input:checked')].map(cb=>cb.value);
-  const build=selectedBuild?selectedBuild.build:null;
-  const genre=selectedBuild?selectedBuild.genre:null;
-  return{overcharge:true,overcharge_build:build,overcharge_genre:genre,overcharge_parts:parts};
-}
+    const totalKillsAll=statsAll.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
+    const totalPresentAll=statsAll.attendance.filter(a=>a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+    const totalAbsentAll=statsAll.attendance.filter(a=>a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+    const rgPendAll=parseInt(statsAll.regear.find(r=>r.status==='pending')?.cnt||0);
+    const rgAppAll=parseInt(statsAll.regear.find(r=>r.status==='approved')?.cnt||0);
+    const rgDenAll=parseInt(statsAll.regear.find(r=>r.status==='denied')?.cnt||0);
 
-// ── ATTENDANCE ────────────────────────────────────────────────────────────────
-async function loadAttendanceCounts(){
-  const date=document.getElementById('att-date').value;
-  try{attData=await api('GET',`/api/attendance?date=${date}`);}catch(e){attData={};}
-  ['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'].forEach(cta=>{
-    const key=cta.replace(':','').replace(' UTC','');
-    const cnt=attData[cta]?attData[cta].present.length:0;
-    document.getElementById('cnt-'+key).textContent=cnt+' presentes';
-  });
-  if(selectedCTA)renderPlayerList();
-}
-function onDateChange(){loadAttendanceCounts();}
-function selectCTA(cta){
-  selectedCTA=cta;
-  document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
-  document.getElementById('cta-'+cta.replace(':','').replace(' UTC','')).classList.add('selected');
-  document.getElementById('att-section').style.display='block';
-  document.getElementById('att-cta-lbl').textContent=cta;
-  const vpBtn=document.getElementById('ver-prints-btn');
-  if(vpBtn)vpBtn.style.display=isAdmin()?'block':'none';
-  renderPlayerList();
-}
-function renderPlayerList(){
-  const data=attData[selectedCTA]||{present:[],absent:[]};
-  const inactive=inactiveNicks();
-  const html=PLAYERS.map(p=>{
-    const isP=data.present.includes(p),isA=data.absent.includes(p);
-    const isSelf=p===session.nick,canToggle=isAdmin()||isSelf;
-    const isInactive=inactive.has(p);
-    const cls=`player-row ${isP?'present':isA?'absent':''} ${isSelf&&!isAdmin()?'self-row':''} ${isInactive?'inactive-row':''}`;
-    const dis=canToggle&&!isInactive?'':'disabled';
-    return`<div class="${cls}" id="pr-${p}">
-      <span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}${isInactive?' <span style="font-size:9px;color:var(--text2)">[inativo]</span>':''}</span>
-      <div class="tbtn">
-        <button class="bp ${isP?'on':''}" onclick="${canToggle&&!isInactive?`tgl('${p}',true)`:''}" ${dis}>✓</button>
-        <button class="bp ba ${isA?'on':''}" onclick="${canToggle&&!isInactive?`tgl('${p}',false)`:''}" ${dis}>✗</button>
-      </div></div>`;
-  }).join('');
-  document.getElementById('player-list').innerHTML=html;
-}
-function tgl(name,present){
-  const row=document.getElementById('pr-'+name);const btns=row.querySelectorAll('.bp');
-  const isSelf=name===session.nick&&!isAdmin();
-  row.className=`player-row ${present?'present':'absent'}${isSelf?' self-row':''}`;
-  btns[0].className='bp'+(present?' on':'');btns[1].className='bp ba'+(present?'':' on');
-}
-function markAll(present){
-  if(!isAdmin())return;
-  const inactive=inactiveNicks();
-  PLAYERS.filter(p=>!inactive.has(p)).forEach(p=>tgl(p,present));
-}
-async function saveAttendance(){
-  const date=document.getElementById('att-date').value;
-  const btn=document.getElementById('att-save-btn');btn.disabled=true;btn.innerHTML='<span class="sp"></span>Salvando...';
-  try{
-    const saves=[];
-    PLAYERS.forEach(p=>{
-      const row=document.getElementById('pr-'+p);if(!row)return;
-      const status=row.classList.contains('present')?'present':row.classList.contains('absent')?'absent':null;
-      if(status&&(isAdmin()||p===session.nick))saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));
-    });
-    await Promise.all(saves);
-    // Save screenshot if provided
-    if(imgs[0]){
-      const player=isAdmin()?'ADMIN':session.nick;
-      try{
-        await api('POST','/api/attendance/screenshot',{date,cta:selectedCTA,player,screenshot:imgs[0]});
-      }catch(e){console.warn('Screenshot save error:',e);}
-    }
-    flash('att-ok');await loadAttendanceCounts();
-  }catch(e){flashErr('att-err',e.message);}
-  finally{btn.disabled=false;btn.textContent='Salvar';}
-}
+    const totalKillsW=statsWeek.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
+    const totalPresentW=statsWeek.attendance.filter(a=>a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
 
-// ── KILLS ─────────────────────────────────────────────────────────────────────
-async function saveKill(){
-  const date=document.getElementById('kill-date').value,cta=document.getElementById('kill-cta').value;
-  const player=isAdmin()?document.getElementById('kill-player').value:session.nick;
-  const kill_count=parseInt(document.getElementById('kill-count').value)||0;
-  try{
-    const screenshots=killImgs.filter(Boolean);
-    await api('POST','/api/kills',{date,cta,player,kill_count,screenshots});
-    killImgs=[];
-    document.getElementById('kill-count').value=0;
-    document.getElementById('kill-previews').innerHTML='';
-    document.getElementById('kill-imgs-count').style.display='none';
-    // Reset file input
-    const upl=document.querySelector('#kill-upl-area input');if(upl)upl.value='';
-    flash('kill-ok');loadKillsTable();
-  }catch(e){flashErr('kill-err',e.message);}
-}
-async function loadKillsTable(){
-  try{
-    const rows=await api('GET','/api/kills');
-    if(!rows.length){document.getElementById('kills-table').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum kill registrado.</p>';return;}
-    let html='<table><thead><tr><th>Data</th><th>CTA</th><th>Player</th><th>Kills</th><th>Print</th><th></th></tr></thead><tbody>';
-    rows.slice(0,60).forEach(k=>{
-      const d=k.date?k.date.split('T')[0]:'-';
-      const canDel=isAdmin()||k.player===session.nick;
-      const allShots=Array.isArray(k.screenshots)&&k.screenshots.length?k.screenshots:(k.screenshot?[k.screenshot]:[]);
-      const shotsHtml=allShots.slice(0,3).map(s=>`<img src="${s}" style="width:36px;height:27px;object-fit:cover;border-radius:3px;cursor:pointer;margin-right:2px" onclick="viewImg('${s}')">`).join('')||'-';
-      html+=`<tr><td style="font-family:var(--mono);font-size:12px">${d}</td><td style="font-family:var(--mono);font-size:11px">${k.cta}</td><td style="font-family:var(--mono);font-size:12px;color:var(--gold2)">${k.player}</td><td><span class="badge ba2">${k.kill_count}</span></td><td>${shotsHtml}</td><td>${canDel?`<button class="btn-del" onclick="delKill(${k.id})">×</button>`:''}</td></tr>`;
-    });
-    html+='</tbody></table>';document.getElementById('kills-table').innerHTML=html;
-  }catch(e){}
-}
-async function delKill(id){try{await api('DELETE',`/api/kills/${id}`);loadKillsTable();}catch(e){}}
+    const totalKillsM=statsMonth.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
+    const totalPresentM=statsMonth.attendance.filter(a=>a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
 
-// ── REGEAR ────────────────────────────────────────────────────────────────────
-async function saveRegear(){
-  const date=document.getElementById('rg-date').value,cta=document.getElementById('rg-cta').value;
-  const player=isAdmin()?document.getElementById('rg-player').value:session.nick;
-  const note=document.getElementById('rg-note').value;
-  if(!imgs[2]){flashErr('rg-err','Anexe o print da morte!');return;}
-  const ocData=getOverchargeData();
-  const death_role=document.getElementById('death-check').checked&&selectedDeathRole?selectedDeathRole.build:null;
-  const death_genre=document.getElementById('death-check').checked&&selectedDeathRole?selectedDeathRole.genre:null;
-  try{
-    await api('POST','/api/regear',{date,cta,player,note,screenshot:imgs[2],death_role,death_genre,...ocData});
-    imgs[2]=null;document.getElementById('rg-note').value='';document.getElementById('rg-prev').style.display='none';
-    resetOvercharge();resetDeath();flash('rg-ok');loadRegearList();
-  }catch(e){flashErr('rg-err',e.message);}
-}
-async function loadRegearList(){
-  const hidePaid=isAdmin()&&document.getElementById('rg-hide-paid')?.checked;
-  try{
-    const rows=await api('GET','/api/regear');
-    const filtered=hidePaid?rows.filter(r=>!r.paid):rows;
-    if(!filtered.length){document.getElementById('regear-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum pedido ainda.</p>';return;}
-    let html='';const next={pending:'approved',approved:'denied',denied:'pending'};
-    filtered.forEach(r=>{
-      const cls=r.status==='approved'?'st-a':r.status==='denied'?'st-d':'st-p';
-      const lbl=r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
-      const d=r.date?r.date.split('T')[0]:'-';
-      let ocInfo='',deathInfo='';
-      if(r.death_role)deathInfo=`<div class="rg-death">☠ Morte — ${r.death_genre?r.death_genre+' · ':''}${r.death_role} (set completo)</div>`;
-      if(r.overcharge&&r.overcharge_build){
-        const parts=Array.isArray(r.overcharge_parts)?r.overcharge_parts:(JSON.parse(r.overcharge_parts||'[]'));
-        const genre=r.overcharge_genre?r.overcharge_genre+' · ':'';
-        ocInfo=`<div class="rg-oc">⚡ OC ${genre}${r.overcharge_build}${parts.length?' · '+parts.join(', '):''}</div>`;
-      }
-      const paidBadge=r.paid?'<span class="badge bg" style="font-size:10px">PAGO</span>':'';
-      html+=`<div class="rg-item ${r.paid?'paid-item':''}">
-        ${r.screenshot?`<img src="${r.screenshot}" style="width:56px;height:56px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:``}
-        <div class="rg-info">
-          <div class="flex aic gap8"><div class="rg-nick">${r.player}</div>${paidBadge}</div>
-          <div class="rg-meta">${d} · ${r.cta}${r.note?' · '+r.note:''}</div>
-          ${deathInfo}${ocInfo}
-          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-            ${isAdmin()?`
-              <button class="btn btn-sm" style="padding:4px 10px;font-size:11px;background:${r.status==='pending'?'rgba(201,162,39,.2)':r.status==='approved'?'rgba(46,204,113,.2)':'rgba(224,58,58,.2)'};border:1px solid ${r.status==='pending'?'rgba(201,162,39,.4)':r.status==='approved'?'rgba(46,204,113,.4)':'rgba(224,58,58,.4)'};color:${r.status==='pending'?'var(--gold2)':r.status==='approved'?'var(--green)':'var(--red)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="cycleRgStatus(${r.id},'${r.status}')" title="Clique para alterar">${lbl} ▾</button>
-              <button class="btn btn-sm" style="padding:4px 10px;font-size:11px;background:${r.paid?'rgba(46,204,113,.15)':'rgba(201,162,39,.1)'};border:1px solid ${r.paid?'rgba(46,204,113,.3)':'rgba(201,162,39,.2)'};color:${r.paid?'var(--green)':'var(--text2)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="togglePaid(${r.id},${r.paid})" title="${r.paid?'Clique para desfazer pagamento':'Marcar como pago'}">${r.paid?'✓ Pago':'Marcar pago'}</button>
-              <button class="btn-del" onclick="delRegear(${r.id})">Remover</button>
-            `:`<span class="stbadge ${cls}">${lbl}</span>`}
+    const attRateAll=statsAll.totalCTAs>0?Math.round(totalPresentAll/(statsAll.totalCTAs*PLAYERS.length)*100):0;
+
+    wrap.innerHTML=`
+      <!-- KPI CARDS -->
+      <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+        <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-num">${statsAll.totalCTAs}</div><div class="stat-label">CTAs Total</div></div>
+        <div class="stat-card"><div class="stat-icon">💀</div><div class="stat-num">${totalKillsAll}</div><div class="stat-label">Kills Total</div></div>
+        <div class="stat-card"><div class="stat-icon">🛡️</div><div class="stat-num">${totalPresentAll}</div><div class="stat-label">Presenças</div></div>
+        <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-num">${attRateAll}%</div><div class="stat-label">Taxa Attend.</div></div>
+        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-num">${rgPendAll}</div><div class="stat-label">RG Pendentes</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num">${rgAppAll}</div><div class="stat-label">RG Aprovados</div></div>
+      </div>
+
+      <!-- COMPARATIVO PERÍODO -->
+      <div class="sec">
+        <div class="sec-title">Comparativo de Períodos</div>
+        <div class="charts-row">
+          <div class="chart-box">
+            <div class="chart-title">Kills por Período</div>
+            <div style="position:relative;height:200px"><canvas id="adm-kills-chart"></canvas></div>
           </div>
-        </div></div>`;
-    });
-    document.getElementById('regear-list').innerHTML=html;
-  }catch(e){}
-}
-async function setRgStatus(id,status){try{await api('PATCH',`/api/regear/${id}/status`,{status});loadRegearList();}catch(e){}}
-function cycleRgStatus(id,current){
-  const order={pending:'approved',approved:'denied',denied:'pending'};
-  setRgStatus(id,order[current]);
-}
-async function togglePaid(id,currentPaid){
-  try{await api('PATCH',`/api/regear/${id}/paid`,{paid:!currentPaid});loadRegearList();}catch(e){}
-}
-
-async function delRegear(id){try{await api('DELETE',`/api/regear/${id}`);loadRegearList();}catch(e){}}
-
-// ── COMPRAS ───────────────────────────────────────────────────────────────────
-async function loadShopping(){
-  const from=document.getElementById('shop-from').value,to=document.getElementById('shop-to').value;
-  try{
-    const data=await api('GET',`/api/shopping?from=${from}&to=${to}`);
-    if(!Object.keys(data).length){
-      document.getElementById('shopping-content').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhuma compra pendente no período.</p>';
-      return;
-    }
-    let html='';
-    Object.entries(data).forEach(([build,items])=>{
-      const total=Object.values(items).reduce((s,v)=>s+v,0);
-      if(total===0)return;
-      html+=`<div class="shop-build">
-        <div class="shop-build-title">${build}</div>
-        <div class="shop-items">`;
-      Object.entries(items).forEach(([item,qty])=>{
-        if(qty===0)return;
-        html+=`<div class="shop-item">
-          <span class="shop-item-name">${item}</span>
-          <span class="shop-item-qty">×${qty}</span>
-        </div>`;
-      });
-      html+=`</div></div>`;
-    });
-    document.getElementById('shopping-content').innerHTML=html||'<p style="color:var(--text2);font-size:13px">Nenhuma compra pendente.</p>';
-  }catch(e){document.getElementById('shopping-content').innerHTML='<p style="color:var(--red);font-size:13px">Erro ao carregar.</p>';}
-}
-
-// ── MEMBROS ───────────────────────────────────────────────────────────────────
-async function saveMember(){
-  const nick=document.getElementById('mb-nick').value;
-  const joined_at=document.getElementById('mb-joined').value;
-  const notes=document.getElementById('mb-notes').value;
-  if(!nick||!joined_at){flashErr('mb-err','Nick e data obrigatórios.');return;}
-  try{
-    await api('POST','/api/members',{nick,joined_at,notes});
-    membersCache=await api('GET','/api/members');
-    document.getElementById('mb-notes').value='';
-    flash('mb-ok');loadMembers();
-  }catch(e){flashErr('mb-err',e.message);}
-}
-async function loadMembers(){
-  const showInactive=document.getElementById('show-inactive')?.checked;
-  try{
-    membersCache=await api('GET','/api/members');
-    const list=showInactive?membersCache:membersCache.filter(m=>m.active);
-    if(!list.length){document.getElementById('members-list').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhum membro cadastrado.</p>';return;}
-    let html='';
-    list.forEach(m=>{
-      const joined=m.joined_at?m.joined_at.split('T')[0]:'-';
-      const left=m.left_at?m.left_at.split('T')[0]:null;
-      html+=`<div class="member-row ${m.active?'':'inactive'}">
-        <div class="member-nick">${m.nick}${!m.active?'<span style="font-size:9px;color:var(--text2);margin-left:6px">[inativo]</span>':''}</div>
-        <div class="member-dates">Entrou: ${joined}${left?' · Saiu: '+left:''}</div>
-        ${m.phone?`<div style="font-size:11px;font-family:var(--mono);color:var(--blue);margin-top:2px">📱 ${m.phone}</div>`:''}
-        <div class="member-notes">${m.notes||''}</div>
-        <div style="font-size:10px;color:var(--text2);margin-top:3px">${m.has_password?'🔒 Senha definida':'⚠ Sem senha'}</div>
-        <div class="flex gap8" style="margin-top:6px;flex-wrap:wrap">
-          ${m.active?`<button class="btn-del" onclick="openDeactivate('${m.nick}')">Marcar saída</button>`:`<button class="btn-green" onclick="reactivate('${m.nick}')">Reativar</button>`}
-          <button class="btn btn-ol btn-sm" onclick="openResetPass('${m.nick}')">Resetar senha</button>
-          <button class="btn-del" onclick="deleteMember('${m.nick}')">×</button>
+          <div class="chart-box">
+            <div class="chart-title">Presenças por Período</div>
+            <div style="position:relative;height:200px"><canvas id="adm-att-chart"></canvas></div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">Re-gears (All-time)</div>
+            <div style="position:relative;height:200px"><canvas id="adm-rg-chart"></canvas></div>
+          </div>
         </div>
+      </div>
+
+      <!-- TOP PLAYERS -->
+      <div class="sec">
+        <div class="sec-title">Top Players — Kills All-time</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${[...PLAYERS].sort((a,b)=>{
+            const ka=parseInt(statsAll.kills.find(k=>k.player===a)?.total||0);
+            const kb=parseInt(statsAll.kills.find(k=>k.player===b)?.total||0);
+            return kb-ka;
+          }).slice(0,10).map((p,i)=>{
+            const k=parseInt(statsAll.kills.find(k=>k.player===p)?.total||0);
+            const maxK=parseInt(statsAll.kills[0]?.total||1);
+            const pct=Math.round(k/Math.max(maxK,1)*100);
+            return`<div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--display);font-size:11px;color:var(--text2);width:20px;text-align:right">${i+1}</span>
+              <span style="font-family:var(--mono);font-size:12px;min-width:130px;color:var(--text)">${p}</span>
+              <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold-dim),var(--gold2));border-radius:4px;transition:width .5s"></div>
+              </div>
+              <span style="font-family:var(--display);font-size:13px;font-weight:600;color:var(--gold2);min-width:30px;text-align:right">${k}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- ATTENDANCE POR PLAYER -->
+      <div class="sec">
+        <div class="sec-title">Attendance por Player — All-time</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${[...PLAYERS].map(p=>{
+            const pr=statsAll.attendance.filter(a=>a.player===p&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+            const ab=statsAll.attendance.filter(a=>a.player===p&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+            const tot=pr+ab;
+            const pct=tot>0?Math.round(pr/tot*100):0;
+            return{p,pr,ab,tot,pct};
+          }).sort((a,b)=>b.pct-a.pct).map(({p,pr,ab,pct})=>{
+            const clr=pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';
+            return`<div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--mono);font-size:12px;min-width:130px;color:var(--text)">${p}</span>
+              <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${clr};border-radius:4px"></div>
+              </div>
+              <span style="font-family:var(--display);font-size:13px;font-weight:600;color:${clr};min-width:38px;text-align:right">${pct}%</span>
+              <span style="font-size:10px;color:var(--text2);font-family:var(--mono)">${pr}✓ ${ab}✗</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- EXPORTAÇÃO -->
+      <div class="sec">
+        <div class="sec-title">Exportação de Dados</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-gold" onclick="exportExcel()">📥 Exportar Excel (.xlsx)</button>
+          <button class="btn btn-ol" onclick="exportCSV()">📄 Exportar CSV</button>
+        </div>
+        <div id="export-status" style="margin-top:10px;font-size:12px;color:var(--text2);font-family:var(--mono)"></div>
       </div>`;
-    });
-    document.getElementById('members-list').innerHTML=html;
-  }catch(e){}
+
+    // Render charts after DOM update
+    setTimeout(()=>{
+      const barOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'var(--text2)',font:{size:10}}},y:{ticks:{color:'var(--text2)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}}}};
+      new Chart(document.getElementById('adm-kills-chart'),{type:'bar',data:{labels:['7 dias','30 dias','Total'],datasets:[{data:[totalKillsW,totalKillsM,totalKillsAll],backgroundColor:['rgba(192,57,43,.7)','rgba(192,57,43,.5)','rgba(192,57,43,.3)'],borderColor:['var(--red2)','var(--red)','var(--red)'],borderWidth:1,borderRadius:4}]},options:barOpts});
+      new Chart(document.getElementById('adm-att-chart'),{type:'bar',data:{labels:['7 dias','30 dias','Total'],datasets:[{data:[totalPresentW,totalPresentM,totalPresentAll],backgroundColor:['rgba(39,174,96,.7)','rgba(39,174,96,.5)','rgba(39,174,96,.3)'],borderColor:['var(--green2)','var(--green)','var(--green)'],borderWidth:1,borderRadius:4}]},options:barOpts});
+      new Chart(document.getElementById('adm-rg-chart'),{type:'doughnut',data:{labels:['Pendente','Aprovado','Negado'],datasets:[{data:[rgPendAll,rgAppAll,rgDenAll],backgroundColor:['rgba(201,162,39,.7)','rgba(39,174,96,.7)','rgba(192,57,43,.7)'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'var(--text2)',font:{size:10}},position:'bottom'}},cutout:'50%'}});
+    },100);
+
+  }catch(e){
+    wrap.innerHTML=`<div class="alert alert-e" style="display:block">Erro: ${e.message}</div>`;
+  }
 }
-function openDeactivate(nick){
-  deactNick=nick;
-  document.getElementById('deact-nick').textContent=nick;
-  document.getElementById('deact-date').value=today();
-  document.getElementById('modal-deactivate').classList.add('open');
+
+function getDateOffset(days){
+  const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);
 }
-function openResetPass(nick){
-  document.getElementById('reset-pass-nick').textContent=nick;
-  document.getElementById('reset-pass-value').value='';
-  document.getElementById('modal-reset-pass').classList.add('open');
-}
-async function confirmResetPass(){
-  const nick=document.getElementById('reset-pass-nick').textContent;
-  const password=document.getElementById('reset-pass-value').value.trim();
-  if(!password){alert('Digite a nova senha');return;}
+function getTodayStr(){return new Date().toISOString().slice(0,10);}
+
+// ─── EXPORTAÇÃO EXCEL ────────────────────────────────────────────────
+async function exportExcel(){
+  const statusEl=document.getElementById('export-status');
+  if(statusEl)statusEl.innerHTML=`<span class="sp"></span> Gerando planilha...`;
+
   try{
-    await api('POST','/api/auth/reset-password',{nick,password});
-    document.getElementById('modal-reset-pass').classList.remove('open');
-    alert(`Senha de ${nick} resetada com sucesso!`);
-  }catch(e){alert(e.message);}
-}
-async function confirmDeactivate(){
-  const left_at=document.getElementById('deact-date').value;
-  try{
-    await api('PATCH',`/api/members/${deactNick}`,{active:false,left_at});
-    membersCache=await api('GET','/api/members');
-    document.getElementById('modal-deactivate').classList.remove('open');
-    loadMembers();renderPlayerList();
-  }catch(e){}
-}
-async function reactivate(nick){
-  try{await api('PATCH',`/api/members/${nick}`,{active:true,left_at:null});membersCache=await api('GET','/api/members');loadMembers();renderPlayerList();}catch(e){}
-}
-async function deleteMember(nick){
-  if(!confirm(`Deletar registro de ${nick}?`))return;
-  try{await api('DELETE',`/api/members/${nick}`);membersCache=await api('GET','/api/members');loadMembers();}catch(e){}
+    // Load SheetJS
+    if(typeof XLSX==='undefined'){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    const [statsAll, attAll, killsAll, rgAll]= await Promise.all([
+      api('GET',`/api/stats?from=2024-01-01&to=2099-12-31`),
+      api('GET',`/api/attendance?date=2024-01-01`).catch(()=>[]),  // fallback
+      api('GET',`/api/kills`).catch(()=>[]),
+      api('GET',`/api/regear`).catch(()=>[])
+    ]);
+
+    const wb=XLSX.utils.book_new();
+
+    // ── Aba 1: Resumo
+    const resumo=[
+      ['Tracker Bomb Imortais — Exportação','','',new Date().toLocaleString('pt-BR')],
+      [],
+      ['MÉTRICA','VALOR'],
+      ['Total CTAs',statsAll.totalCTAs],
+      ['Total Kills',statsAll.kills.reduce((s,k)=>s+parseInt(k.total||0),0)],
+      ['Total Presenças',statsAll.attendance.filter(a=>a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0)],
+      ['Re-gears Pendentes',parseInt(statsAll.regear.find(r=>r.status==='pending')?.cnt||0)],
+      ['Re-gears Aprovados',parseInt(statsAll.regear.find(r=>r.status==='approved')?.cnt||0)],
+      ['Players no guild',PLAYERS.length],
+    ];
+    const wsResumo=XLSX.utils.aoa_to_sheet(resumo);
+    wsResumo['!cols']=[{wch:30},{wch:15}];
+    XLSX.utils.book_append_sheet(wb,wsResumo,'Resumo');
+
+    // ── Aba 2: Kills por player
+    const killsData=[['Player','Total Kills'],...PLAYERS.map(p=>[p,parseInt(statsAll.kills.find(k=>k.player===p)?.total||0)]).sort((a,b)=>b[1]-a[1])];
+    const wsKills=XLSX.utils.aoa_to_sheet(killsData);
+    wsKills['!cols']=[{wch:20},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,wsKills,'Kills');
+
+    // ── Aba 3: Attendance por player
+    const attData=[['Player','Presenças','Ausências','Total CTAs','% Presença'],...PLAYERS.map(p=>{
+      const pr=statsAll.attendance.filter(a=>a.player===p&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+      const ab=statsAll.attendance.filter(a=>a.player===p&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+      const tot=pr+ab;
+      return[p,pr,ab,tot,tot>0?Math.round(pr/tot*100)+'%':'—'];
+    }).sort((a,b)=>parseInt(b[4]||0)-parseInt(a[4]||0))];
+    const wsAtt=XLSX.utils.aoa_to_sheet(attData);
+    wsAtt['!cols']=[{wch:20},{wch:12},{wch:12},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,wsAtt,'Attendance');
+
+    // ── Aba 4: Re-gear detalhado
+    let rgRows=[['Player','Data','CTA','Tipo','Role/Build','Status','Pago']];
+    if(Array.isArray(rgAll)){
+      rgAll.forEach(r=>{
+        rgRows.push([r.player,r.date,r.cta,r.overcharge?'Overcharge':'Morte',r.death_role||r.overcharge_build||'—',r.status,r.paid?'Sim':'Não']);
+      });
+    }
+    const wsRg=XLSX.utils.aoa_to_sheet(rgRows);
+    wsRg['!cols']=[{wch:18},{wch:12},{wch:12},{wch:14},{wch:20},{wch:12},{wch:8}];
+    XLSX.utils.book_append_sheet(wb,wsRg,'Re-gear');
+
+    // ── Aba 5: Ranking
+    const rankPlayers=await computeRankingData('2024-01-01','2099-12-31');
+    const rankData=[['#','Player','Título','Pontos All-time','Kills','Presenças','% Presença','Medalhas'],...rankPlayers.map((p,i)=>[i+1,p.nick,p.title.title,p.ptsAll.toFixed(1),p.kills,p.attP,p.attendancePct+'%',p.medals.filter(Boolean).map(m=>m.name).join(', ')])];
+    const wsRank=XLSX.utils.aoa_to_sheet(rankData);
+    wsRank['!cols']=[{wch:5},{wch:20},{wch:22},{wch:14},{wch:8},{wch:12},{wch:12},{wch:40}];
+    XLSX.utils.book_append_sheet(wb,wsRank,'Ranking');
+
+    XLSX.writeFile(wb,`bomb-imortais-${getTodayStr()}.xlsx`);
+    if(statusEl)statusEl.innerHTML=`<span style="color:var(--green2)">✓ Excel gerado com sucesso! (5 abas: Resumo, Kills, Attendance, Re-gear, Ranking)</span>`;
+  }catch(e){
+    if(statusEl)statusEl.innerHTML=`<span style="color:var(--red2)">Erro ao gerar Excel: ${e.message}</span>`;
+    console.error(e);
+  }
 }
 
-// ── STATS ─────────────────────────────────────────────────────────────────────
-async function loadStats(){
-  if(!isAdmin())return;
-  const from=document.getElementById('st-from').value,to=document.getElementById('st-to').value;
-  try{
-    const d=await api('GET',`/api/stats?from=${from}&to=${to}`);statsCache=d;
-    const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
-    const rgPending=parseInt(d.regear.find(r=>r.status==='pending')?.cnt||0);
-    document.getElementById('stats-sum').innerHTML=`
-      <div class="scard"><div class="snum">${d.totalCTAs}</div><div class="slbl">CTAs registradas</div></div>
-      <div class="scard"><div class="snum">${totalKills}</div><div class="slbl">Kills totais</div></div>
-      <div class="scard"><div class="snum">${rgPending}</div><div class="slbl">Re-gears pendentes</div></div>`;
-
-    const kbp=d.killsByPlayer||d.kills;
-    const top6=kbp.slice(0,6),outros=kbp.slice(6).reduce((s,k)=>s+parseInt(k.total||0),0);
-    const kL=top6.map(k=>k.player),kD=top6.map(k=>parseInt(k.total||0));
-    if(outros>0){kL.push('Outros');kD.push(outros);}
-    document.getElementById('leg-kills').innerHTML=kL.map((l,i)=>`<span><span class="legend-dot" style="background:${PIZZA_COLORS[i]}"></span>${l} ${kD[i]}</span>`).join('');
-    destroyChart('killsGuild');
-    charts.killsGuild=new Chart(document.getElementById('chart-kills-guild'),{type:'doughnut',data:{labels:kL,datasets:[{data:kD,backgroundColor:PIZZA_COLORS.slice(0,kL.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}});
-
-    const totalSlots=d.totalCTAs*PLAYERS.length;
-    let tp=0,ta=0;d.attendance.forEach(r=>{if(r.status==='present')tp+=parseInt(r.cnt||0);else ta+=parseInt(r.cnt||0);});
-    const sr=Math.max(0,totalSlots-tp-ta);
-    destroyChart('attGuild');
-    charts.attGuild=new Chart(document.getElementById('chart-att-guild'),{type:'doughnut',data:{labels:['Presentes','Ausentes','Sem registro'],datasets:[{data:[tp,ta,sr],backgroundColor:['#2ecc71','#e03a3a','#2a2e3a'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}});
-
-    const rgA=parseInt(d.regear.find(r=>r.status==='approved')?.cnt||0),rgD=parseInt(d.regear.find(r=>r.status==='denied')?.cnt||0);
-    destroyChart('rgGuild');
-    charts.rgGuild=new Chart(document.getElementById('chart-rg-guild'),{type:'doughnut',data:{labels:['Aprovados','Negados','Pendentes'],datasets:[{data:[rgA,rgD,rgPending],backgroundColor:['#2ecc71','#e03a3a','#c9a227'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'55%'}});
-
-    const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});
-    d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt||0);});
-    const sorted=[...PLAYERS].sort((a,b)=>pMap[b].present-pMap[a].present);
-    let tHtml='<table><thead><tr><th>#</th><th>Player</th><th>Presentes</th><th>Ausentes</th><th>% Presença</th></tr></thead><tbody>';
-    sorted.forEach((p,i)=>{
-      const s=pMap[p];const total=s.present+s.absent;const pct=total>0?Math.round(s.present/total*100):0;
-      const cls=pct>=70?'bg':pct>=40?'ba2':'br';
-      tHtml+=`<tr><td style="color:var(--text2);font-size:12px">${i+1}</td><td style="font-family:var(--mono);font-size:12px">${p}</td><td><span class="badge bg">${s.present}</span></td><td><span class="badge br">${s.absent}</span></td><td><span class="badge ${cls}">${pct}%</span></td></tr>`;
-    });tHtml+='</tbody></table>';
-    document.getElementById('stats-att').innerHTML=tHtml;
-
-    const kMap={};PLAYERS.forEach(p=>{kMap[p]=0;});d.kills.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total||0);});
-    const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);
-    let kHtml='<div class="kgrid">';
-    kSorted.forEach(p=>{const n=kMap[p];kHtml+=`<div class="kcard ${n>0?'has':''}"><div class="knum">${n}</div><div class="kname">${p}</div></div>`;});
-    kHtml+='</div>';document.getElementById('stats-kills').innerHTML=kHtml;
-    document.getElementById('stats-rg').innerHTML=`<div class="flex gap8 wrap"><span class="badge ba2">Pendentes: ${rgPending}</span><span class="badge bg">Aprovados: ${rgA}</span><span class="badge br">Negados: ${rgD}</span></div>`;
-    renderRadar();
-  }catch(e){console.error(e);}
-}
-function renderRadar(){
-  if(!statsCache)return;
-  const player=document.getElementById('radar-player').value,d=statsCache;
-  const pMap={};PLAYERS.forEach(p=>{pMap[p]={present:0,absent:0};});
-  d.attendance.forEach(r=>{if(pMap[r.player])pMap[r.player][r.status]=parseInt(r.cnt||0);});
-  const s=pMap[player]||{present:0,absent:0};const total=s.present+s.absent;
-  const pct=total>0?Math.round(s.present/total*100):0;
-  const kills=parseInt(d.kills.find(k=>k.player===player)?.total||0);
-  const totalKills=d.kills.reduce((sum,k)=>sum+parseInt(k.total||0),0);
-  const killsPct=totalKills>0?Math.round(kills/totalKills*100):0;
-  const myRg=parseInt(d.regearByPlayer?.find(r=>r.player===player)?.cnt||0);
-  const rgA=parseInt(d.regear.find(r=>r.status==='approved')?.cnt||0);
-  const consistencia=total>0?Math.round((1-(s.absent/Math.max(total,1)))*100):0;
-  const vals=[pct,Math.min(killsPct*3,100),Math.min(myRg*20,100),d.totalCTAs>0?pct:0,consistencia];
-  const labels=['Presença','Kills','Re-gears','Participação','Consistência'];
-  destroyChart('radar');
-  charts.radar=new Chart(document.getElementById('chart-radar'),{type:'radar',data:{labels,datasets:[{label:player,data:vals,backgroundColor:'rgba(201,162,39,0.12)',borderColor:'#c9a227',pointBackgroundColor:'#c9a227',borderWidth:2,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,0.07)'},angleLines:{color:'rgba(255,255,255,0.07)'},pointLabels:{color:'#8a8578',font:{size:11}}}},plugins:{legend:{display:false}}}});
-  const metrics=[{label:'Presença',val:pct+'%'},{label:'Kills',val:kills},{label:'Re-gears',val:myRg},{label:'Aprovação',val:rgA+'%'},{label:'Consistência',val:consistencia+'%'}];
-  document.getElementById('radar-cards').innerHTML=metrics.map(m=>`<div class="scard"><div class="snum" style="font-size:20px">${m.val}</div><div class="slbl">${m.label}</div></div>`).join('');
-}
-function destroyChart(name){if(charts[name]){charts[name].destroy();charts[name]=null;}}
-function clearStFilter(){const t=today();document.getElementById('st-from').value=t;document.getElementById('st-to').value=t;loadStats();}
-function exportCSV(){const a=document.createElement('a');a.href=`/api/export/csv?_admin=${encodeURIComponent(session.adminPass||'')}`;a.click();}
-async function clearAllData(){try{await api('DELETE','/api/data/all');}catch(e){}closeModal();loadStats();loadKillsTable();loadRegearList();loadAttendanceCounts();}
-
-// ── Utils ─────────────────────────────────────────────────────────────────────
-function showPage(p,btn){
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active');
-  if(btn)btn.classList.add('active');
-  if(p==='stats')loadStats();
-  if(p==='kills')loadKillsTable();
-  if(p==='regear')loadRegearList();
-  if(p==='members')loadMembers();
-  if(p==='shopping')loadShopping();
-  if(p==='feed')loadFeed();
-  if(p==='builds')loadBuilds();
-  if(p==='videos')loadVideos();
-}
-function handleImg(e,previewId,slot){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{imgs[slot]=ev.target.result;const img=document.getElementById(previewId);img.src=ev.target.result;img.style.display='block';};r.readAsDataURL(f);
-}
-function flash(id){const el=document.getElementById(id);el.style.display='block';setTimeout(()=>el.style.display='none',2200);}
-function flashErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
-function viewImg(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh">`);}
-function confirmClear(){document.getElementById('modal-confirm').classList.add('open');}
-function closeModal(){document.getElementById('modal-confirm').classList.remove('open');}
-
-document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
 </script>
 </body>
 </html>
