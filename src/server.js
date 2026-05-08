@@ -165,7 +165,17 @@ app.delete('/api/members/:nick', requireAdmin, async (req, res) => {
 
 // ── Attendance ────────────────────────────────────────────────────────────────
 app.get('/api/attendance', async (req, res) => {
-  const { date } = req.query;
+  const { date, from, to } = req.query;
+  // Range mode: returns flat array of {date, player, cta, status}
+  if (from && to) {
+    try {
+      const rows = await pool.query(
+        'SELECT date::text, player, cta, status FROM attendance WHERE date >= $1 AND date <= $2 ORDER BY date ASC',
+        [from, to]
+      );
+      return res.json(rows.rows);
+    } catch (e) { return res.status(500).json({ error: 'Erro ao buscar attendance.' }); }
+  }
   if (!date) return res.status(400).json({ error: 'date obrigatório' });
   try {
     const [att, shots] = await Promise.all([

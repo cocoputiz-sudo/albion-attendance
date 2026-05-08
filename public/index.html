@@ -680,13 +680,11 @@ tr:first-child td{border-top:none}
   </div>
 
 
-  <!-- MODAL: PERFIL REGEAR DO PLAYER -->
+  <!-- MODAL: PERFIL RE-GEAR -->
   <div class="modal-ov" id="modal-player-rg">
     <div class="modal" style="max-width:680px;width:95%">
       <button class="xbtn" onclick="document.getElementById('modal-player-rg').classList.remove('open')">×</button>
-      <div id="modal-player-rg-content">
-        <div style="text-align:center;padding:40px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Carregando...</div>
-      </div>
+      <div id="modal-player-rg-content"></div>
     </div>
   </div>
 
@@ -987,7 +985,7 @@ async function loadAttendanceScreenshots(date, cta) {
       w.document.write(`<div style="margin-bottom:12px"><p style="color:#8a8578;font-size:12px;margin-bottom:4px">${s.player}</p>`);
       w.document.write(`<img src="${s.screenshot}" style="max-width:100%;border-radius:8px;border:1px solid #2a2e3a"></div>`);
     });
-    w.document.write('');
+    w.document.write('</body></html>');
   }catch(e){}
 }
 
@@ -1158,7 +1156,7 @@ function initApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-screen').style.display='block';
   document.getElementById('badge-name').textContent=session.nick;
-  ['user-avatar','user-avatar-letter'].forEach(id=>{const av=document.getElementById(id);if(av)av.textContent=session.nick?session.nick[0]:'?';});
+  const av=document.getElementById('user-avatar');if(av)av.textContent=session.nick?session.nick[0]:'?';
   document.getElementById('badge-role').textContent=isAdmin()?'Officer / Admin':'Player';
   ['stats-tab','shopping-tab','members-tab','admin-tab'].forEach(id=>document.getElementById(id).style.display=isAdmin()?'':'none');
   document.getElementById('ranking-tab').style.display='';
@@ -1413,7 +1411,7 @@ async function loadRegearList(){
       html+=`<div class="rg-item ${r.paid?'paid-item':''}">
         ${r.screenshot?`<img src="${r.screenshot}" style="width:56px;height:56px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="viewImg('${r.screenshot}')">`:``}
         <div class="rg-info">
-          <div class="flex aic gap8"><div class="rg-nick" style="cursor:pointer;text-decoration:underline dotted" onclick="openPlayerRgModal('${r.player}')" title="Ver perfil de ${r.player}">${r.player}</div>${paidBadge}</div>
+          <div class="flex aic gap8"><div class="rg-nick" style="cursor:pointer;text-decoration:underline dotted" onclick="openPlayerRgModal('${r.player}')" title="Ver perfil">${r.player}</div>${paidBadge}</div>
           <div class="rg-meta">${d} · ${r.cta}${r.note?' · '+r.note:''}</div>
           ${deathInfo}${ocInfo}
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
@@ -1646,151 +1644,76 @@ function viewImg(src){const w=window.open();w.document.write(`<img src="${src}" 
 function confirmClear(){document.getElementById('modal-confirm').classList.add('open');}
 function closeModal(){document.getElementById('modal-confirm').classList.remove('open');}
 
-// (login-nick populated in initDropdowns below)
+document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
+const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
 let dashCharts={kills:null,att:null};
 
 
 async function loadDashboard(){
   try{
-    // Greet
     const nick=session?.nick||'Guerreiro';
     const el=document.getElementById('dash-greeting');
-    if(el)el.textContent=`Bem-vindo, ${nick}`;
-
-    // Both player and admin load real stats (api/stats is now public)
-
-    const d=await api('GET',`/api/stats?from=2024-01-01&to=2099-12-31`);
+    if(el)el.textContent='Bem-vindo, '+nick;
+    const d=await api('GET','/api/stats?from=2024-01-01&to=2099-12-31');
     const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
     const totalPresent=d.attendance.filter(a=>a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
     const rgPending=parseInt(d.regear.find(r=>r.status==='pending')?.cnt||0);
-    const rgApproved=parseInt(d.regear.find(r=>r.status==='approved')?.cnt||0);
-
     const sub=document.getElementById('dash-sub');
-    if(sub)sub.textContent=`Guild Imortais · ${PLAYERS.length} guerreiros ativos · ${d.totalCTAs} CTAs registradas`;
-    // For players: add personal stats to greeting
-    if(!isAdmin()&&session.nick){
-      const myKills=parseInt(d.kills.find(k=>k.player===session.nick)?.total||0);
-      const myPresent=d.attendance.filter(a=>a.player===session.nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
-      const myAbs=d.attendance.filter(a=>a.player===session.nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
-      const myTot=myPresent+myAbs;
-      const myPct=myTot>0?Math.round(myPresent/myTot*100):0;
-      if(sub)sub.textContent=`Suas stats: ${myKills} kills · ${myPresent} presenças · ${myPct}% de attendance`;
+    if(sub){
+      if(!isAdmin()&&session.nick){
+        const mk=parseInt(d.kills.find(k=>k.player===session.nick)?.total||0);
+        const mp=d.attendance.filter(a=>a.player===session.nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+        const ma=d.attendance.filter(a=>a.player===session.nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+        const pct=mp+ma>0?Math.round(mp/(mp+ma)*100):0;
+        sub.textContent=nick+' · '+mk+' kills · '+mp+' presenças · '+pct+'% attendance';
+      } else {
+        sub.textContent='Guild Imortais · '+PLAYERS.length+' guerreiros · '+d.totalCTAs+' CTAs registradas';
+      }
     }
-
-    // Stat cards — IDs individuais no HTML
     const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-    set('d-ctas',d.totalCTAs||0);
-    set('d-kills',totalKills);
-    set('d-present',totalPresent);
-    set('d-regear',rgPending);
-
-    // Kills ranking — usa div #dash-ranking do novo HTML
+    set('d-ctas',d.totalCTAs||0);set('d-kills',totalKills);set('d-present',totalPresent);set('d-regear',rgPending);
     const kbp=(d.killsByPlayer||d.kills).sort((a,b)=>parseInt(b.total||0)-parseInt(a.total||0));
-    const kMap={};PLAYERS.forEach(p=>kMap[p]=0);
-    kbp.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total||0);});
+    const kMap={};PLAYERS.forEach(p=>kMap[p]=0);kbp.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total||0);});
     const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);
-
-    const AVATAR_COLORS=['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400','#1abc9c','#e74c3c'];
+    const ACOLORS=['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400','#1abc9c','#e74c3c'];
     const dr=document.getElementById('dash-ranking');
-    if(dr){
-      dr.innerHTML=kSorted.slice(0,12).map((p,i)=>{
-        const n=kMap[p];
-        const rCls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
-        const rPosCls=i===0?'r1':i===1?'r2':i===2?'r3':'';
-        const crown=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
-        const bgClr=AVATAR_COLORS[i%AVATAR_COLORS.length];
-        return`<div class="rank-card ${rCls}">
-          <div class="rank-pos ${rPosCls}">${crown}</div>
-          <div class="rank-avatar" style="background:linear-gradient(135deg,${bgClr}88,${bgClr})">${p[0]}</div>
-          <div class="rank-nick">${p}</div>
-          <div class="rank-stat">${n}</div>
-          <div class="rank-label">kills</div>
-        </div>`;
-      }).join('');
-    }
-
-    // CTAs de hoje com contagem real
+    if(dr){dr.innerHTML=kSorted.slice(0,12).map((p,i)=>{const n=kMap[p];const rCls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';const rPosCls=i===0?'r1':i===1?'r2':i===2?'r3':'';const crown=i===0?'👑':i===1?'🥈':i===2?'🥉':'#'+(i+1);const bgClr=ACOLORS[i%ACOLORS.length];return'<div class="rank-card '+rCls+'"><div class="rank-pos '+rPosCls+'">'+crown+'</div><div class="rank-avatar" style="background:linear-gradient(135deg,'+bgClr+'88,'+bgClr+')">'+p[0]+'</div><div class="rank-nick">'+p+'</div><div class="rank-stat">'+n+'</div><div class="rank-label">kills</div></div>';}).join('');}
     await loadDashboardCTAs();
-
-    // Attendance table últimos 7 dias
     await loadDashboardAttTable();
-
-  }catch(e){console.error('Dashboard error:',e);}
+  }catch(e){console.error('Dashboard:',e);}
 }
-
+async function loadDashboardAttTable(){
+  const tbl=document.getElementById('dash-att-table');if(!tbl)return;
+  try{
+    const now=new Date(),dates=[];
+    for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);dates.push(d.toISOString().slice(0,10));}
+    const allRecs=await api('GET','/api/attendance?from='+dates[0]+'&to='+dates[6]);
+    const ctas=['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'],cs=['15:30','17:10','19:10','23:10'];
+    const pMap={};PLAYERS.forEach(p=>{pMap[p]={};dates.forEach(dt=>ctas.forEach(c=>{pMap[p][dt+'_'+c]=null;}));});
+    allRecs.forEach(r=>{const dt=(r.date||'').split('T')[0];if(pMap[r.player]&&dt)pMap[r.player][dt+'_'+r.cta]=r.status;});
+    const sorted=PLAYERS.map(p=>{let pr=0,tot=0;dates.forEach(dt=>ctas.forEach(c=>{const v=pMap[p][dt+'_'+c];if(v!==null){tot++;if(v==='present')pr++;}}));return{p,pct:tot>0?Math.round(pr/tot*100):null};}).sort((a,b)=>(b.pct??-1)-(a.pct??-1));
+    const show=dates.slice(-3);
+    let th='<tr><th>Player</th>'+show.map(dt=>'<th colspan="4" style="text-align:center;border-left:1px solid var(--border2)">'+dt.slice(5)+'</th>').join('')+'<th style="border-left:1px solid var(--border2)">7d %</th></tr><tr><th></th>'+show.map(()=>cs.map(c=>'<th style="font-size:9px;color:var(--text3);padding:3px 4px">'+c+'</th>').join('')).join('')+'<th></th></tr>';
+    let tb=sorted.map(({p,pct})=>{const clr=pct===null?'var(--text2)':pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';return'<tr><td><span style="font-family:var(--mono);font-size:12px">'+p+'</span></td>'+show.map(dt=>ctas.map(c=>{const v=pMap[p][dt+'_'+c];return v===null?'<td style="text-align:center"><span style="color:var(--text3)">·</span></td>':v==='present'?'<td style="text-align:center"><span style="color:var(--green2)">✓</span></td>':'<td style="text-align:center"><span style="color:var(--red2);font-size:10px">✗</span></td>';}).join('')).join('')+'<td style="border-left:1px solid var(--border2);text-align:center"><span style="font-family:var(--display);font-size:13px;font-weight:600;color:'+clr+'">'+(pct!==null?pct+'%':'—')+'</span></td></tr>';}).join('');
+    tbl.innerHTML='<table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table>';
+  }catch(e){document.getElementById('dash-att-table').innerHTML='<p style="color:var(--red2);font-size:12px;padding:10px;font-family:var(--mono)">Erro: '+e.message+'</p>';}
+}
 async function loadDashboardCTAs(){
   try{
     const today=new Date().toISOString().slice(0,10);
-    const rec=await api('GET',`/api/attendance?date=${today}`);
+    const rec=await api('GET','/api/attendance?date='+today);
     const ctas=['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'];
     const ids=['dc-1530','dc-1710','dc-1910','dc-2310'];
     ctas.forEach((c,i)=>{
-      const cnt=rec.filter(r=>r.cta===c&&r.status==='present').length;
+      const cnt=Object.values(rec).reduce((s,g)=>s+(g.present||[]).includes('DUMMY')?0:0,0);
+      const allPresent=[];Object.entries(rec).forEach(([ctaKey,g])=>{if(ctaKey===c)(g.present||[]).forEach(p=>allPresent.push(p));});
       const el=document.getElementById(ids[i]);
-      if(el)el.innerHTML=`<span style="color:var(--green2);font-family:var(--mono)">${cnt}</span><span style="color:var(--text2);font-size:10px"> / ${PLAYERS.length}</span>`;
+      if(el)el.innerHTML='<span style="color:var(--green2);font-family:var(--mono)">'+allPresent.length+'</span><span style="color:var(--text2);font-size:10px"> / '+PLAYERS.length+'</span>';
     });
   }catch(e){}
 }
-
-async function loadDashboardAttTable(){
-  const tbl=document.getElementById('dash-att-table');
-  if(!tbl)return;
-  try{
-    // últimos 7 dias
-    const dates=[];
-    for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dates.push(d.toISOString().slice(0,10));}
-    // buscar para cada data
-    const allRecs=await Promise.all(dates.map(dt=>api('GET',`/api/attendance?date=${dt}`).catch(()=>[])));
-    const ctas=['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'];
-    const ctaShort=['15:30','17:10','19:10','23:10'];
-    // montar por player
-    const pMap={};
-    PLAYERS.forEach(p=>{pMap[p]={};dates.forEach(dt=>{ctas.forEach(c=>{pMap[p][dt+'_'+c]=null;});});});
-    dates.forEach((dt,di)=>{
-      (allRecs[di]||[]).forEach(r=>{if(pMap[r.player])pMap[r.player][dt+'_'+r.cta]=r.status;});
-    });
-    // calcular % presença por player para ordenar
-    const pctsArr=PLAYERS.map(p=>{
-      let pr=0,tot=0;
-      dates.forEach(dt=>ctas.forEach(c=>{const v=pMap[p][dt+'_'+c];if(v!==null){tot++;if(v==='present')pr++;}}));
-      return{p,pct:tot>0?Math.round(pr/tot*100):null,pr,tot};
-    }).sort((a,b)=>(b.pct??-1)-(a.pct??-1));
-    // render: mostrar só os últimos 3 dias para não ficar largo, e só 4 CTAs compactas
-    const showDates=dates.slice(-3);
-    tbl.innerHTML=`<table>
-      <thead><tr>
-        <th>Player</th>
-        ${showDates.map(dt=>`<th colspan="4" style="text-align:center;border-left:1px solid var(--border2)">${dt.slice(5)}</th>`).join('')}
-        <th style="border-left:1px solid var(--border2)">Presença</th>
-      </tr>
-      <tr>
-        <th></th>
-        ${showDates.map(()=>ctaShort.map(c=>`<th style="font-size:9px;color:var(--text3)">${c}</th>`).join('')).join('')}
-        <th></th>
-      </tr></thead>
-      <tbody>
-      ${pctsArr.map(({p,pct,pr,tot})=>{
-        const pctColor=pct===null?'var(--text2)':pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';
-        return`<tr>
-          <td><span style="font-family:var(--mono);font-size:12px;color:var(--text)">${p}</span></td>
-          ${showDates.map(dt=>ctas.map(c=>{
-            const v=pMap[p][dt+'_'+c];
-            if(v===null)return`<td style="text-align:center"><span style="color:var(--text3);font-size:11px">·</span></td>`;
-            if(v==='present')return`<td style="text-align:center"><span style="color:var(--green2);font-size:13px">✓</span></td>`;
-            return`<td style="text-align:center"><span style="color:var(--red2);font-size:11px">✗</span></td>`;
-          }).join('')).join('')}
-          <td style="border-left:1px solid var(--border2);text-align:center">
-            <span style="font-family:var(--display);font-size:13px;font-weight:600;color:${pctColor}">${pct!==null?pct+'%':'—'}</span>
-          </td>
-        </tr>`;
-      }).join('')}
-      </tbody>
-    </table>`;
-  }catch(e){tbl.innerHTML='<p style="color:var(--text2);font-size:12px;padding:10px">Erro ao carregar tabela.</p>';}
-}
-
 // Dashboard loaded via showPage
 const _origShowPage=showPage;
 showPage=function(p,btn){
@@ -1798,27 +1721,20 @@ showPage=function(p,btn){
   if(p==='dashboard')loadDashboard();
   if(p==='ranking'){setRkWeek();loadRanking();}
   if(p==='admin')loadAdminPanel();
-  if(p==='attendance'){setTimeout(hookAttendanceOCR,300);}
-  if(p==='kills'){setTimeout(hookKillsOCR,300);}
+  if(p==='attendance'){setTimeout(hookAttendanceOCR,400);}
+  if(p==='kills'){setTimeout(hookKillsOCR,400);}
 };
 
-// Populate dropdowns immediately — script is at bottom of body so DOM is ready
-(function initDropdowns(){
-  const fillSel=(id,arr)=>{const el=document.getElementById(id);if(el)el.innerHTML=arr.map(p=>`<option value="${p}">${p}</option>`).join('');};
-  fillSel('login-nick',PLAYERS);
-  fillSel('reset-nick-sel',PLAYERS);
-  fillSel('mb-nick',PLAYERS);
-  fillSel('kill-player',PLAYERS);
-  fillSel('rg-player',PLAYERS);
-  fillSel('radar-player',PLAYERS);
-  // news-target: keep empty first option
-  const nt=document.getElementById('news-target');
-  if(nt)PLAYERS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;nt.appendChild(o);});
-})();
+// Init: show dashboard by default
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
+});
 
-function setRkWeek(){const now=new Date();const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));document.getElementById('rk-from').value=mon.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
-function setRkMonth(){const now=new Date();const start=new Date(now.getFullYear(),now.getMonth(),1);document.getElementById('rk-from').value=start.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
+function setRkWeek(){const now=new Date(),mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));document.getElementById('rk-from').value=mon.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
+function setRkMonth(){const now=new Date(),s=new Date(now.getFullYear(),now.getMonth(),1);document.getElementById('rk-from').value=s.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
 function setRkAll(){document.getElementById('rk-from').value='2024-01-01';document.getElementById('rk-to').value='2099-12-31';}
+function getDateOffset(d){const dt=new Date();dt.setDate(dt.getDate()+d);return dt.toISOString().slice(0,10);}
+function getTodayStr(){return new Date().toISOString().slice(0,10);}
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -1997,146 +1913,6 @@ async function loadRanking(){
       </div>`;
   }catch(e){
     document.getElementById('rk-content').innerHTML=`<div class="alert alert-e" style="display:block">Erro ao carregar ranking: ${e.message}</div>`;
-  }
-}
-
-
-// ════════════════════════════════════════════════════════════════════
-// FEATURE 5 — OCR INTELIGENTE DE PRINTS
-// ════════════════════════════════════════════════════════════════════
-
-let ocrWorker = null;
-let ocrReady = false;
-
-async function initOCR(){
-  if(ocrReady||ocrWorker)return;
-  try{
-    // Tesseract.js via CDN — loaded lazily
-    if(typeof Tesseract==='undefined'){
-      await new Promise((res,rej)=>{
-        const s=document.createElement('script');
-        s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
-        s.onload=res; s.onerror=rej;
-        document.head.appendChild(s);
-      });
-    }
-    ocrReady=true;
-  }catch(e){console.warn('OCR não disponível:',e);}
-}
-
-async function runOCR(imageFile){
-  await initOCR();
-  if(!ocrReady)return null;
-  try{
-    const result=await Tesseract.recognize(imageFile,'eng',{logger:()=>{}});
-    return result.data.text;
-  }catch(e){console.warn('OCR error:',e);return null;}
-}
-
-// Extrai nicks do texto OCR comparando com PLAYERS
-function extractPlayersFromOCR(text){
-  if(!text)return[];
-  const upper=text.toUpperCase();
-  const found=[];
-  for(const p of PLAYERS){
-    // Fuzzy: aceita se o nick aparecer com até 1 char de erro
-    if(upper.includes(p)){
-      found.push(p);
-    }
-  }
-  return[...new Set(found)];
-}
-
-// OCR para kill feed — detecta nicks e sugere preenchimento
-async function ocrKillFeed(file, statusEl){
-  if(!file)return null;
-  if(statusEl)statusEl.innerHTML=`<span class="sp"></span> Lendo print com OCR...`;
-  const text=await runOCR(file);
-  const found=extractPlayersFromOCR(text||'');
-  if(statusEl){
-    if(found.length>0){
-      statusEl.innerHTML=`<span style="color:var(--green2)">✓ OCR detectou ${found.length} player(s):</span> <span style="font-family:var(--mono);color:var(--gold2)">${found.join(', ')}</span>`;
-    } else {
-      statusEl.innerHTML=`<span style="color:var(--text2)">OCR não detectou nicks conhecidos no print.</span>`;
-    }
-  }
-  return found;
-}
-
-// OCR para print de presença — detecta nicks e marca checkboxes
-async function ocrAttendancePrint(file){
-  const statusEl=document.getElementById('ocr-att-status');
-  if(statusEl)statusEl.innerHTML=`<span class="sp"></span> Lendo print com OCR...`;
-  const text=await runOCR(file);
-  const found=extractPlayersFromOCR(text||'');
-
-  if(found.length===0){
-    if(statusEl)statusEl.innerHTML=`<span style="color:var(--gold2)">⚠ OCR não reconheceu nenhum nick. Marque manualmente.</span>`;
-    return;
-  }
-
-  let marked=0;
-  for(const nick of found){
-    // Find player row and click the "✓" present button
-    const rows=document.querySelectorAll('.player-row');
-    for(const row of rows){
-      if(row.querySelector('.pname')?.textContent.trim()===nick){
-        const btn=row.querySelector('.bp');
-        if(btn&&!btn.classList.contains('on')){
-          btn.click();
-          marked++;
-        }
-        break;
-      }
-    }
-  }
-  if(statusEl)statusEl.innerHTML=`<span style="color:var(--green2)">✓ OCR marcou <strong>${marked}</strong> player(s): <span style="font-family:var(--mono);color:var(--gold2)">${found.join(', ')}</span></span>`;
-}
-
-// Hook: quando o upload da CTA recebe imagem → rodar OCR para attendance
-function hookAttendanceOCR(){
-  // Inject OCR status div after the upload area
-  const uplArea=document.querySelector('#att-section .upl');
-  if(!uplArea)return;
-  if(document.getElementById('ocr-att-status'))return;
-  const statusDiv=document.createElement('div');
-  statusDiv.id='ocr-att-status';
-  statusDiv.style.cssText='margin-top:8px;font-size:12px;min-height:20px;padding:6px 0;font-family:var(--mono)';
-  uplArea.parentNode.insertBefore(statusDiv, uplArea.nextSibling);
-
-  // Override the file input handler to also trigger OCR
-  const fileInput=uplArea.querySelector('input[type=file]');
-  if(fileInput){
-    const origChange=fileInput.onchange;
-    fileInput.onchange=async function(e){
-      if(origChange)origChange.call(this,e);
-      if(e.target.files[0])await ocrAttendancePrint(e.target.files[0]);
-    };
-  }
-}
-
-// Hook: OCR nos prints de kill feed
-function hookKillsOCR(){
-  const uplArea=document.getElementById('kill-upl-area');
-  if(!uplArea)return;
-  if(document.getElementById('ocr-kill-status'))return;
-  const statusDiv=document.createElement('div');
-  statusDiv.id='ocr-kill-status';
-  statusDiv.style.cssText='margin-top:8px;font-size:12px;min-height:20px;padding:6px 0;font-family:var(--mono)';
-  uplArea.parentNode.insertBefore(statusDiv, uplArea.nextSibling);
-
-  const fileInput=uplArea.querySelector('input[type=file]');
-  if(fileInput){
-    const origChange=fileInput.onchange;
-    fileInput.onchange=async function(e){
-      if(origChange)origChange.call(this,e);
-      const files=Array.from(e.target.files||[]);
-      if(files.length>0){
-        const statusEl=document.getElementById('ocr-kill-status');
-        // OCR on first image only (kill count display)
-        await ocrKillFeed(files[0], statusEl);
-      }
-    };
   }
 }
 
@@ -2362,140 +2138,48 @@ async function exportExcel(){
   }
 }
 
-// ── MODAL PERFIL RE-GEAR DO PLAYER ──────────────────────────────────────────
+
+// ════════ OCR + FUZZY MATCH ════════
+let ocrReady=false;
+async function initOCR(){if(ocrReady)return true;try{if(typeof Tesseract==='undefined'){await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}ocrReady=true;return true;}catch(e){return false;}}
+async function runOCR(file){if(!await initOCR())return null;try{return(await Tesseract.recognize(file,'eng',{logger:()=>{}})).data.text;}catch(e){return null;}}
+function levenshtein(a,b){const m=a.length,n=b.length,dp=[];for(let i=0;i<=m;i++){dp[i]=[i];for(let j=1;j<=n;j++)dp[i][j]=0;}for(let j=0;j<=n;j++)dp[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);return dp[m][n];}
+function extractPlayersFromOCR(text){if(!text)return[];const up=text.toUpperCase().replace(/[^A-Z0-9\s]/g,' ');const toks=up.split(/\s+/).filter(t=>t.length>=3);const found=[];for(const player of PLAYERS){const pUp=player.toUpperCase();if(up.includes(pUp)){found.push(player);continue;}const md=pUp.length<=5?1:pUp.length<=8?2:3;let ok=false;for(const tok of toks){if(Math.abs(tok.length-pUp.length)>md+1)continue;if(levenshtein(tok,pUp)<=md){ok=true;break;}}if(ok)found.push(player);}return[...new Set(found)];}
+async function ocrKillFeed(file,el){if(!file)return[];if(el)el.innerHTML='<span class="sp"></span> Lendo OCR...';const text=await runOCR(file);const found=text?extractPlayersFromOCR(text):[];if(el){if(found.length)el.innerHTML='<span style="color:var(--green2)">✓ Detectou: <span style="color:var(--gold2)">'+found.join(', ')+'</span></span>';else el.innerHTML='<span style="color:var(--gold2)">⚠ Sem nicks. Texto: <span style="font-size:10px;color:var(--text2)">'+(text||'vazio').slice(0,150)+'</span></span>';}return found;}
+async function ocrAttendancePrint(file){const el=document.getElementById('ocr-att-status');if(el)el.innerHTML='<span class="sp"></span> Lendo OCR...';const text=await runOCR(file);const found=text?extractPlayersFromOCR(text):[];if(!found.length){if(el)el.innerHTML='<span style="color:var(--gold2)">⚠ Sem nicks. Texto OCR: <span style="font-size:10px;color:var(--text2)">'+(text||'vazio').slice(0,150)+'</span></span>';return;}let marked=0;for(const nick of found)document.querySelectorAll('.player-row').forEach(row=>{if(row.querySelector('.pname')?.textContent.trim()===nick){const btn=row.querySelector('.bp');if(btn&&!btn.classList.contains('on')){btn.click();marked++;}}});if(el)el.innerHTML='<span style="color:var(--green2)">✓ Marcou '+marked+' player(s): <span style="color:var(--gold2)">'+found.join(', ')+'</span></span>';}
+function hookAttendanceOCR(){if(document.getElementById('ocr-att-status'))return;const area=document.querySelector('#att-section .upl');if(!area)return;const d=document.createElement('div');d.id='ocr-att-status';d.style.cssText='margin-top:8px;font-size:12px;min-height:18px;font-family:var(--mono)';area.parentNode.insertBefore(d,area.nextSibling);const fi=area.querySelector('input[type=file]');if(fi){const o=fi.onchange;fi.onchange=async function(e){if(o)o.call(this,e);if(e.target.files[0])await ocrAttendancePrint(e.target.files[0])};}}
+function hookKillsOCR(){if(document.getElementById('ocr-kill-status'))return;const area=document.getElementById('kill-upl-area');if(!area)return;const d=document.createElement('div');d.id='ocr-kill-status';d.style.cssText='margin-top:8px;font-size:12px;min-height:18px;font-family:var(--mono)';area.parentNode.insertBefore(d,area.nextSibling);const fi=area.querySelector('input[type=file]');if(fi){const o=fi.onchange;fi.onchange=async function(e){if(o)o.call(this,e);const f=Array.from(e.target.files||[]);if(f[0])await ocrKillFeed(f[0],document.getElementById('ocr-kill-status'))};}}
+
+
 async function openPlayerRgModal(nick){
-  const modal = document.getElementById('modal-player-rg');
-  const content = document.getElementById('modal-player-rg-content');
-  modal.classList.add('open');
-  content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Carregando perfil de ${nick}...</div>`;
-
-  try {
-    const rows = await api('GET', '/api/regear');
-    const playerRows = rows.filter(r => r.player === nick);
-
-    if (!playerRows.length) {
-      content.innerHTML = `
-        <h2 style="margin-bottom:16px">⚒ ${nick}</h2>
-        <p style="color:var(--text2);font-family:var(--mono);font-size:13px">Nenhum pedido de re-gear encontrado para este player.</p>`;
-      return;
-    }
-
-    // Agrupar itens a receber (aprovados, não pagos)
-    const aReceber = playerRows.filter(r => r.status === 'approved' && !r.paid);
-    const pendentes = playerRows.filter(r => r.status === 'pending');
-    const negados   = playerRows.filter(r => r.status === 'denied');
-    const pagos     = playerRows.filter(r => r.paid);
-
-    // Consolidar lista de itens aprovados não pagos
-    const itensConsolidados = {};
-    aReceber.forEach(r => {
-      if (r.death_role) {
-        const key = `Morte · ${r.death_genre||''} · ${r.death_role} (set completo)`;
-        itensConsolidados[key] = (itensConsolidados[key]||0) + 1;
-      }
-      if (r.overcharge && r.overcharge_build) {
-        const parts = Array.isArray(r.overcharge_parts) ? r.overcharge_parts : JSON.parse(r.overcharge_parts||'[]');
-        const genre = r.overcharge_genre ? r.overcharge_genre + ' · ' : '';
-        const key = `OC · ${genre}${r.overcharge_build}`;
-        if (parts.length) {
-          parts.forEach(p => { itensConsolidados[`${key} · ${p}`] = (itensConsolidados[`${key} · ${p}`]||0)+1; });
-        } else {
-          itensConsolidados[key] = (itensConsolidados[key]||0)+1;
-        }
-      }
+  const modal=document.getElementById('modal-player-rg'),content=document.getElementById('modal-player-rg-content');
+  if(!modal||!content)return;modal.classList.add('open');
+  content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Carregando...</div>';
+  try{
+    const rows=await api('GET','/api/regear');
+    const pr=rows.filter(r=>r.player===nick);
+    if(!pr.length){content.innerHTML='<h2 style="margin-bottom:12px">'+nick+'</h2><p style="color:var(--text2)">Nenhum pedido.</p>';return;}
+    const aR=pr.filter(r=>r.status==='approved'&&!r.paid),pen=pr.filter(r=>r.status==='pending'),neg=pr.filter(r=>r.status==='denied'),pag=pr.filter(r=>r.paid);
+    const itens={};
+    aR.forEach(r=>{
+      if(r.death_role){const k='☠ Morte · '+(r.death_genre?r.death_genre+' · ':'')+r.death_role+' (set)';itens[k]=(itens[k]||0)+1;}
+      if(r.overcharge&&r.overcharge_build){const p=Array.isArray(r.overcharge_parts)?r.overcharge_parts:JSON.parse(r.overcharge_parts||'[]');const g=r.overcharge_genre?r.overcharge_genre+' · ':'';if(p.length)p.forEach(pt=>{const k='⚡ OC · '+g+r.overcharge_build+' · '+pt;itens[k]=(itens[k]||0)+1;});else{const k='⚡ OC · '+g+r.overcharge_build;itens[k]=(itens[k]||0)+1;}}
     });
-
-    const AVATAR_COLORS = ['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400'];
-    const bgClr = AVATAR_COLORS[nick.charCodeAt(0) % AVATAR_COLORS.length];
-
-    const next = {pending:'approved', approved:'denied', denied:'pending'};
-
-    function renderRgRow(r, showActions=true) {
-      const cls = r.status==='approved'?'st-a':r.status==='denied'?'st-d':'st-p';
-      const lbl = r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
-      const d = r.date ? r.date.split('T')[0] : '-';
-      let ocInfo='', deathInfo='';
-      if (r.death_role) deathInfo=`<div class="rg-death">☠ Morte — ${r.death_genre?r.death_genre+' · ':''}${r.death_role} (set completo)</div>`;
-      if (r.overcharge && r.overcharge_build) {
-        const parts = Array.isArray(r.overcharge_parts) ? r.overcharge_parts : JSON.parse(r.overcharge_parts||'[]');
-        ocInfo=`<div class="rg-oc">⚡ OC ${r.overcharge_genre?r.overcharge_genre+' · ':''}${r.overcharge_build}${parts.length?' · '+parts.join(', '):''}</div>`;
-      }
-      const paidBadge = r.paid ? '<span class="badge bg" style="font-size:10px;margin-left:6px">PAGO</span>' : '';
-      return `<div class="rg-item ${r.paid?'paid-item':''}" style="margin:6px 0">
-        ${r.screenshot ? `<img src="${r.screenshot}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;border:1px solid var(--border2)" onclick="viewImg('${r.screenshot}')">` : `<div style="width:52px;height:52px;border-radius:6px;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);font-size:20px">💀</div>`}
-        <div class="rg-info" style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">${d} · ${r.cta}</span>
-            ${paidBadge}
-          </div>
-          ${deathInfo}${ocInfo}
-          ${r.note ? `<div style="font-size:11px;color:var(--text2);margin-top:2px;font-style:italic">${r.note}</div>` : ''}
-          ${showActions && isAdmin() ? `
-          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn btn-sm" style="padding:3px 10px;font-size:10px;background:${r.status==='approved'?'rgba(46,204,113,.2)':r.status==='denied'?'rgba(224,58,58,.2)':'rgba(201,162,39,.2)'};border:1px solid ${r.status==='approved'?'rgba(46,204,113,.4)':r.status==='denied'?'rgba(224,58,58,.4)':'rgba(201,162,39,.4)'};color:${r.status==='approved'?'var(--green2)':r.status==='denied'?'var(--red2)':'var(--gold2)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="cycleRgStatus(${r.id},'${r.status}');setTimeout(()=>openPlayerRgModal('${nick}'),400)">${lbl} ▾</button>
-            <button class="btn btn-sm" style="padding:3px 10px;font-size:10px;background:${r.paid?'rgba(46,204,113,.15)':'rgba(201,162,39,.1)'};border:1px solid ${r.paid?'rgba(46,204,113,.3)':'rgba(201,162,39,.2)'};color:${r.paid?'var(--green2)':'var(--text2)'};border-radius:4px;cursor:pointer;font-family:var(--mono)" onclick="togglePaid(${r.id},${r.paid});setTimeout(()=>openPlayerRgModal('${nick}'),400)">${r.paid?'✓ Pago':'Marcar pago'}</button>
-          </div>` : ''}
-        </div>
-      </div>`;
+    const ACLR=['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400'];
+    const bg=ACLR[nick.charCodeAt(0)%ACLR.length];
+    function mkRow(r){
+      const lbl=r.status==='approved'?'Aprovado':r.status==='denied'?'Negado':'Pendente';
+      const d=(r.date||'-').split('T')[0];
+      let di='',oi='';
+      if(r.death_role)di='<div class="rg-death">☠ '+(r.death_genre?r.death_genre+' · ':'')+r.death_role+'</div>';
+      if(r.overcharge&&r.overcharge_build){const p=Array.isArray(r.overcharge_parts)?r.overcharge_parts:JSON.parse(r.overcharge_parts||'[]');oi='<div class="rg-oc">⚡ '+(r.overcharge_genre?r.overcharge_genre+' · ':'')+r.overcharge_build+(p.length?' · '+p.join(', '):'')+' </div>';}
+      const act=isAdmin()?'<div style="margin-top:5px;display:flex;gap:4px"><button style="padding:2px 8px;font-size:10px;background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.3);color:var(--gold2);border-radius:4px;cursor:pointer" onclick="cycleRgStatus('+r.id+',''+r.status+'');setTimeout(()=>openPlayerRgModal(''+nick+''),500)">'+lbl+' ▾</button><button style="padding:2px 8px;font-size:10px;background:'+(r.paid?'rgba(46,204,113,.15)':'rgba(201,162,39,.08)')+';border:1px solid '+(r.paid?'rgba(46,204,113,.3)':'rgba(201,162,39,.2)')+';color:'+(r.paid?'var(--green2)':'var(--text2)')+';border-radius:4px;cursor:pointer" onclick="togglePaid('+r.id+','+r.paid+');setTimeout(()=>openPlayerRgModal(''+nick+''),500)">'+(r.paid?'✓ Pago':'Marcar pago')+'</button></div>':'';
+      return '<div class="rg-item '+(r.paid?'paid-item':'')+'" style="margin:5px 0">'+(r.screenshot?'<img src="'+r.screenshot+'" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer" onclick="viewImg(''+r.screenshot+'')">':'')+'<div class="rg-info" style="flex:1"><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">'+d+' · '+r.cta+(r.paid?' · <span style=color:var(--green2)>PAGO</span>':'')+'</div>'+di+oi+(r.note?'<div style="font-size:11px;font-style:italic;color:var(--text2)">'+r.note+'</div>':'')+act+'</div></div>';
     }
-
-    content.innerHTML = `
-      <!-- HEADER DO PLAYER -->
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border2)">
-        <div style="width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,${bgClr}88,${bgClr});display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:700;color:var(--bg);flex-shrink:0">${nick[0]}</div>
-        <div>
-          <div style="font-family:var(--display);font-size:18px;font-weight:700;color:var(--gold2);letter-spacing:1px">${nick}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:3px;font-family:var(--mono)">
-            <span style="color:var(--gold2)">${aReceber.length}</span> a receber ·
-            <span style="color:var(--text2)">${pendentes.length}</span> pendentes ·
-            <span style="color:var(--green2)">${pagos.length}</span> pagos ·
-            <span style="color:var(--red2)">${negados.length}</span> negados
-          </div>
-        </div>
-      </div>
-
-      <!-- LISTA DO QUE DEVE RECEBER -->
-      ${aReceber.length > 0 ? `
-      <div style="background:rgba(39,174,96,.06);border:1px solid rgba(39,174,96,.2);border-radius:10px;padding:14px;margin-bottom:16px">
-        <div style="font-family:var(--display);font-size:11px;color:var(--green2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">✓ O QUE ${nick} DEVE RECEBER</div>
-        ${Object.entries(itensConsolidados).map(([item, qty]) => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-            <span style="font-family:var(--mono);font-size:12px;color:var(--text)">${item}</span>
-            ${qty > 1 ? `<span style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--gold2);background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.2);border-radius:4px;padding:1px 8px">×${qty}</span>` : ''}
-          </div>`).join('')}
-      </div>` : ''}
-
-      <!-- APROVADOS NÃO PAGOS (detalhes com prints) -->
-      ${aReceber.length > 0 ? `
-      <div style="margin-bottom:16px">
-        <div style="font-family:var(--display);font-size:10px;color:var(--green2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Aprovados — aguardando pagamento (${aReceber.length})</div>
-        ${aReceber.map(r => renderRgRow(r, true)).join('')}
-      </div>` : ''}
-
-      <!-- PENDENTES -->
-      ${pendentes.length > 0 ? `
-      <div style="margin-bottom:16px">
-        <div style="font-family:var(--display);font-size:10px;color:var(--gold2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Pendentes (${pendentes.length})</div>
-        ${pendentes.map(r => renderRgRow(r, true)).join('')}
-      </div>` : ''}
-
-      <!-- NEGADOS -->
-      ${negados.length > 0 ? `
-      <div style="margin-bottom:16px">
-        <div style="font-family:var(--display);font-size:10px;color:var(--red2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Negados (${negados.length})</div>
-        ${negados.map(r => renderRgRow(r, false)).join('')}
-      </div>` : ''}
-
-      <!-- PAGOS (colapsado) -->
-      ${pagos.length > 0 ? `
-      <details style="margin-bottom:8px">
-        <summary style="font-family:var(--display);font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;cursor:pointer;padding:8px 0">Histórico pagos (${pagos.length})</summary>
-        <div style="margin-top:8px">${pagos.map(r => renderRgRow(r, false)).join('')}</div>
-      </details>` : ''}
-    `;
-  } catch(e) {
-    content.innerHTML = `<div class="alert alert-e" style="display:block">Erro: ${e.message}</div>`;
-  }
+    const hdr='<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border2)"><div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,'+bg+'88,'+bg+');display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:20px;font-weight:700;color:var(--bg)">'+nick[0]+'</div><div><div style="font-family:var(--display);font-size:17px;font-weight:700;color:var(--gold2)">'+nick+'</div><div style="font-size:11px;color:var(--text2);font-family:var(--mono)">'+aR.length+' a receber · '+pen.length+' pendentes · '+pag.length+' pagos · '+neg.length+' negados</div></div></div>';
+    const receberBox=aR.length?'<div style="background:rgba(39,174,96,.06);border:1px solid rgba(39,174,96,.2);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--green2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">✓ DEVE RECEBER</div>'+Object.entries(itens).map(([item,qty])=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-family:var(--mono);font-size:12px">'+item+'</span>'+(qty>1?'<span style="font-family:var(--display);font-size:13px;color:var(--gold2)">×'+qty+'</span>':'')+'</div>').join('')+'</div>':'';
+    content.innerHTML=hdr+receberBox+(aR.length?'<div style="margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--green2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Aprovados — aguardando pagamento ('+aR.length+')</div>'+aR.map(mkRow).join('')+'</div>':'')+(pen.length?'<div style="margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--gold2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Pendentes ('+pen.length+')</div>'+pen.map(mkRow).join('')+'</div>':'')+(neg.length?'<div style="margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--red2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Negados ('+neg.length+')</div>'+neg.map(mkRow).join('')+'</div>':'')+(pag.length?'<details><summary style="font-family:var(--display);font-size:10px;color:var(--text2);text-transform:uppercase;cursor:pointer;padding:6px 0">Histórico pagos ('+pag.length+')</summary><div style="margin-top:6px">'+pag.map(mkRow).join('')+'</div></details>':'');
+  }catch(e){content.innerHTML='<div class="alert alert-e" style="display:block">Erro: '+e.message+'</div>';}
 }
 
 </script>
