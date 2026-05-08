@@ -1038,7 +1038,7 @@ function startUTCClock(){
   update();setInterval(update,1000);
 }
 
-const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETEGAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ','JOOHNNOIA','CHAPEILLEIRO'];
+const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETEGAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ','JOOHNNOIA','CHAPELLEIRO'];
 const BUILDS={
   'Ranged':{
     'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],
@@ -1343,6 +1343,14 @@ async function saveAttendance(){
       }catch(e){console.warn('Screenshot save error:',e);}
     }
     flash('att-ok');await loadAttendanceCounts();
+    // Limpar preview do print após salvar
+    imgs[0]=null;
+    const prev=document.getElementById('cta-prev');
+    if(prev){prev.src='';prev.style.display='none';}
+    const fi=document.querySelector('#att-section .upl input[type=file]');
+    if(fi)fi.value='';
+    const ocrStatus=document.getElementById('ocr-att-status');
+    if(ocrStatus)ocrStatus.innerHTML='';
   }catch(e){flashErr('att-err',e.message);}
   finally{btn.disabled=false;btn.textContent='Salvar';}
 }
