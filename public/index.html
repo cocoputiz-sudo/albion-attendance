@@ -627,7 +627,17 @@ tr:first-child td{border-top:none}
   <div id="page-members" class="page">
     <h2 style="margin-bottom:14px">👥 Membros</h2>
     <div class="sec">
-      <div class="sec-title">Adicionar / atualizar membro</div>
+      <div class="sec-title">Adicionar novo player</div>
+      <div class="flex gap8 wrap aic" style="margin-bottom:12px">
+        <input type="text" id="mb-nick-new" placeholder="Nick do novo player (ex: PVPKABULOSO)" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px;width:220px;text-transform:uppercase">
+        <div class="dr" style="margin:0"><label style="white-space:nowrap">Entrou em</label><input type="date" id="mb-joined-new" style="width:140px"></div>
+        <input type="text" id="mb-notes-new" placeholder="Observações (opcional)" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px;width:200px">
+        <button class="btn btn-gold btn-sm" onclick="addNewPlayer()">+ Adicionar Player</button>
+      </div>
+      <div class="alert alert-s" id="mb-new-ok" style="margin-top:8px;display:none">Player adicionado! Recarregue a página para ver na lista de presenças.</div>
+      <div class="alert alert-e" id="mb-new-err" style="margin-top:8px;display:none"></div>
+      <div style="height:1px;background:var(--border2);margin:16px 0"></div>
+      <div class="sec-title">Atualizar membro existente</div>
       <div class="flex gap8 wrap aic">
         <select id="mb-nick" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px;width:180px"></select>
         <div class="dr" style="margin:0"><label style="white-space:nowrap">Entrou em</label><input type="date" id="mb-joined" style="width:140px"></div>
@@ -1028,7 +1038,7 @@ function startUTCClock(){
   update();setInterval(update,1000);
 }
 
-const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETEGAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
+const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETEGAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ','JOOHNNOIA','CHAPEILLEIRO'];
 const BUILDS={
   'Ranged':{
     'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],
@@ -1464,6 +1474,47 @@ async function loadShopping(){
 }
 
 // ── MEMBROS ───────────────────────────────────────────────────────────────────
+async function addNewPlayer(){
+  const nickRaw=document.getElementById('mb-nick-new').value.trim().toUpperCase();
+  const joined_at=document.getElementById('mb-joined-new').value;
+  const notes=document.getElementById('mb-notes-new').value.trim();
+  const okEl=document.getElementById('mb-new-ok');
+  const errEl=document.getElementById('mb-new-err');
+  okEl.style.display='none'; errEl.style.display='none';
+
+  if(!nickRaw){errEl.textContent='Digite o nick do player.';errEl.style.display='block';return;}
+  if(!joined_at){errEl.textContent='Data de entrada obrigatória.';errEl.style.display='block';return;}
+  if(PLAYERS.includes(nickRaw)){errEl.textContent=`${nickRaw} já está na lista de players.`;errEl.style.display='block';return;}
+
+  try{
+    // Save to members table
+    await api('POST','/api/members',{nick:nickRaw, joined_at, notes});
+
+    // Add to PLAYERS array in memory
+    PLAYERS.push(nickRaw);
+
+    // Refresh all selects
+    const fillSel=(id)=>{const el=document.getElementById(id);if(el)el.innerHTML=PLAYERS.map(p=>`<option value="${p}">${p}</option>`).join('');};
+    fillSel('mb-nick'); fillSel('kill-player'); fillSel('rg-player'); fillSel('radar-player'); fillSel('reset-nick-sel');
+    const nt=document.getElementById('news-target');
+    if(nt){nt.innerHTML='<option value="">Todos os membros</option>';PLAYERS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;nt.appendChild(o);});}
+
+    // Clear form
+    document.getElementById('mb-nick-new').value='';
+    document.getElementById('mb-joined-new').value='';
+    document.getElementById('mb-notes-new').value='';
+
+    membersCache=await api('GET','/api/members');
+    loadMembers();
+    okEl.innerHTML=`✅ <strong>${nickRaw}</strong> adicionado! Agora aparece em todas as CTAs. <span style="color:var(--gold2)">Avise o desenvolvedor para incluir permanentemente no código.</span>`;
+    okEl.style.display='block';
+    setTimeout(()=>okEl.style.display='none', 8000);
+  }catch(e){
+    errEl.textContent=e.message;
+    errEl.style.display='block';
+  }
+}
+
 async function saveMember(){
   const nick=document.getElementById('mb-nick').value;
   const joined_at=document.getElementById('mb-joined').value;
