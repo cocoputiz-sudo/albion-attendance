@@ -431,6 +431,38 @@ app.delete('/api/data/all', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Erro ao limpar dados.' }); }
 });
 
+
+// ── Migração única: LEFETE + GAME → LEFETEGAME ──────────────────────────────
+app.get('/api/admin/migrate-lefetegame', requireAdmin, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const results = [];
+    const tables = [
+      { table: 'attendance',             col: 'player' },
+      { table: 'attendance_screenshots', col: 'player' },
+      { table: 'kills',                  col: 'player' },
+      { table: 'regear',                 col: 'player' },
+      { table: 'members',                col: 'nick'   },
+      { table: 'news',                   col: 'target_nick' },
+      { table: 'news_read',              col: 'nick'   },
+    ];
+    for (const { table, col } of tables) {
+      for (const old of ['LEFETE', 'GAME']) {
+        const r = await client.query(
+          `UPDATE ${table} SET ${col}='LEFETEGAME' WHERE UPPER(${col})=$1`, [old]
+        );
+        if (r.rowCount > 0) results.push(`${table}.${col}: ${r.rowCount}x '${old}' → 'LEFETEGAME'`);
+      }
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true, results, message: results.length ? 'Migração concluída!' : 'Nada a migrar (já estava correto).' });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally { client.release(); }
+});
+
 app.get('/api/export/csv', async (req, res) => {
   const pass = req.headers['x-admin-pass'] || req.query._admin;
   const nick = (req.headers['x-officer-nick'] || '').toUpperCase();
