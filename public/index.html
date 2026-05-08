@@ -1031,7 +1031,7 @@ function startUTCClock(){
   update();setInterval(update,1000);
 }
 
-const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETE','GAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
+const PLAYERS=['BADMACK','YODEAD','MITRIUS','RODRIGUINHOGG','AMENDOIM123','RAFAJHON','PVPKABULOSO','STANZZAO','SHUVIZINHA','AKAMEAKT','LEFETEGAME','MILPICAS','NEGAUMBLACK','LILIFLOR','VXNXQ','LUCARE','KAMUSGOOD','TARZAN05','ISAHEL','LASUERTE','HYPNOISBRO1','FLAGELO01','MOAHBIIZ'];
 const BUILDS={
   'Ranged':{
     'Arqueiro':['Capacete','Peito','Bota','Arco Plangente'],
@@ -1644,7 +1644,7 @@ function viewImg(src){const w=window.open();w.document.write(`<img src="${src}" 
 function confirmClear(){document.getElementById('modal-confirm').classList.add('open');}
 function closeModal(){document.getElementById('modal-confirm').classList.remove('open');}
 
-document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
+// login-nick populado pelo initDropdowns abaixo
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
@@ -1726,9 +1726,18 @@ showPage=function(p,btn){
 };
 
 // Init: show dashboard by default
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('login-nick').innerHTML=PLAYERS.map(p=>`<option>${p}</option>`).join('');
-});
+// Popula dropdowns imediatamente — script no fim do body = DOM já pronto
+(function initDropdowns(){
+  const fillSel=(id)=>{const el=document.getElementById(id);if(el)el.innerHTML=PLAYERS.map(p=>`<option value="${p}">${p}</option>`).join('');};
+  fillSel('login-nick');
+  fillSel('reset-nick-sel');
+  fillSel('mb-nick');
+  fillSel('kill-player');
+  fillSel('rg-player');
+  fillSel('radar-player');
+  const nt=document.getElementById('news-target');
+  if(nt)PLAYERS.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;nt.appendChild(o);});
+})();
 
 function setRkWeek(){const now=new Date(),mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));document.getElementById('rk-from').value=mon.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
 function setRkMonth(){const now=new Date(),s=new Date(now.getFullYear(),now.getMonth(),1);document.getElementById('rk-from').value=s.toISOString().slice(0,10);document.getElementById('rk-to').value=now.toISOString().slice(0,10);}
