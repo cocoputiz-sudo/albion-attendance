@@ -364,8 +364,11 @@ tr:first-child td{border-top:none}
 <div class="app">
 
 <!-- ═══════ LOGIN ═══════ -->
-<div id="login-screen">
-  <div style="display:flex;align-items:center;gap:16px;padding:20px 0 24px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative">
+<div id="login-screen" style="position:relative;overflow:hidden">
+  <div style="position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center;overflow:hidden">
+    <img src="/bg.jpg" style="width:680px;height:auto;opacity:.10;filter:blur(1px)">
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;padding:20px 0 24px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative;z-index:1">
     <div style="position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)"></div>
     <div class="logo-wrap" style="width:200px;height:120px"><img src="/logo.jpg" alt="IMORTAIS"></div>
     <div>
@@ -373,7 +376,7 @@ tr:first-child td{border-top:none}
       <div class="brand-sub">ALBION ONLINE · IMORTAIS · ATTENDANCE</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;justify-content:center;min-height:65vh;margin-top:-40px">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:65vh;margin-top:-40px;position:relative;z-index:1">
     <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:36px;width:340px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)"></div>
       <div style="text-align:center;margin-bottom:24px">
