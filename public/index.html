@@ -2555,19 +2555,25 @@ function toggleHlType() {
   document.getElementById('hl-file-fi').style.display = t === 'upload' ? 'block' : 'none';
 }
 
-async function handleHlVideo(e) {
+function handleHlVideo(e) {
   const file = e.target.files[0];
   if (!file) return;
   const status = document.getElementById('hl-file-status');
   if (file.size > 50 * 1024 * 1024) {
     status.innerHTML = '<span style="color:var(--red2)">Arquivo muito grande (máx 50MB)</span>';
+    hlVideoData = null;
     return;
   }
   status.innerHTML = '<span class="sp"></span> Carregando vídeo...';
+  hlVideoData = null; // reset while loading
   const reader = new FileReader();
   reader.onload = r => {
     hlVideoData = r.result;
-    status.innerHTML = `<span style="color:var(--green2)">✓ ${file.name} (${(file.size/1024/1024).toFixed(1)}MB)</span>`;
+    status.innerHTML = `<span style="color:var(--green2)">✓ ${file.name} (${(file.size/1024/1024).toFixed(1)}MB) — pronto para salvar</span>`;
+  };
+  reader.onerror = () => {
+    status.innerHTML = '<span style="color:var(--red2)">Erro ao ler arquivo.</span>';
+    hlVideoData = null;
   };
   reader.readAsDataURL(file);
 }
@@ -2585,7 +2591,11 @@ async function saveHighlight() {
     url = document.getElementById('hl-add-url').value.trim();
     if (!url) { errEl.textContent = 'URL obrigatória.'; errEl.style.display = 'block'; return; }
   } else {
-    if (!hlVideoData) { errEl.textContent = 'Selecione um vídeo.'; errEl.style.display = 'block'; return; }
+    if (!hlVideoData) {
+      const hasFile = document.querySelector('#hl-file-fi input[type=file]')?.files?.length > 0;
+      errEl.textContent = hasFile ? 'Aguarde o vídeo terminar de carregar e tente novamente.' : 'Selecione um vídeo.';
+      errEl.style.display = 'block'; return;
+    }
     url = hlVideoData;
   }
 
