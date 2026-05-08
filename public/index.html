@@ -315,6 +315,39 @@ tr:first-child td{border-top:none}
 .knum{font-family:var(--display);font-size:22px;font-weight:700;color:var(--gold2)}
 .kname{font-size:9px;color:var(--text2);margin-top:2px;font-family:var(--mono);word-break:break-all}
 
+
+/* ── HIGHLIGHTS SHORTS ── */
+.hl-overlay{position:fixed;inset:0;background:#000;z-index:1000;display:none;flex-direction:column;align-items:center;justify-content:center}
+.hl-overlay.open{display:flex;animation:fadeIn .3s}
+.hl-container{position:relative;width:100%;max-width:420px;height:100vh;max-height:750px;background:#000;overflow:hidden;border-radius:0}
+@media(min-width:500px){.hl-container{border-radius:16px;height:calc(100vh - 40px)}}
+.hl-video-wrap{width:100%;height:100%;position:relative;background:#000}
+.hl-video-wrap video{width:100%;height:100%;object-fit:contain}
+.hl-video-wrap iframe{width:100%;height:100%;border:none}
+.hl-gradient{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8) 0%,transparent 40%,rgba(0,0,0,.3) 100%);pointer-events:none}
+.hl-top{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;align-items:center;justify-content:space-between;z-index:10}
+.hl-top-brand{display:flex;align-items:center;gap:10px}
+.hl-top-brand img{width:32px;height:32px;border-radius:6px;object-fit:contain;background:#07080a}
+.hl-top-title{font-family:var(--display);font-size:13px;color:#fff;letter-spacing:1px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.hl-close{width:36px;height:36px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:18px;transition:all .15s}
+.hl-close:hover{background:rgba(192,57,43,.7)}
+.hl-bottom{position:absolute;bottom:0;left:0;right:0;padding:20px 16px 32px;z-index:10}
+.hl-info-title{font-family:var(--display);font-size:15px;font-weight:700;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.9);margin-bottom:4px;letter-spacing:.5px}
+.hl-info-meta{font-size:11px;color:rgba(255,255,255,.6);font-family:var(--mono)}
+.hl-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.hl-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .2s;cursor:pointer}
+.hl-dot.active{background:var(--gold);width:20px;border-radius:3px}
+.hl-nav{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10}
+.hl-nav.left{left:8px}.hl-nav.right{right:8px}
+.hl-nav-btn{width:36px;height:36px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.8);font-size:16px;transition:all .15s}
+.hl-nav-btn:hover{background:rgba(201,162,39,.5);border-color:var(--gold)}
+.hl-progress{position:absolute;top:0;left:0;right:0;display:flex;gap:3px;padding:8px 12px;z-index:11}
+.hl-prog-bar{flex:1;height:2px;background:rgba(255,255,255,.25);border-radius:1px;overflow:hidden}
+.hl-prog-fill{height:100%;background:var(--gold);width:0%;transition:none}
+.hl-prog-fill.done{width:100%}
+.hl-prog-fill.active{transition:width linear}
+.hl-new-badge{position:absolute;top:8px;right:8px;background:var(--red2);color:#fff;font-size:9px;font-family:var(--display);letter-spacing:1px;padding:2px 7px;border-radius:4px;text-transform:uppercase}
+
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   .app{padding:10px}
@@ -684,6 +717,7 @@ tr:first-child td{border-top:none}
     <div class="flex aic jb" style="margin-bottom:16px;margin-top:4px">
       <h2>⚙ Painel Admin</h2>
       <button class="btn btn-gold btn-sm" onclick="loadAdminPanel()">↻ Atualizar</button>
+      <button class="btn btn-ol btn-sm" onclick="openAddHighlight()">🎬 + Highlight</button>
     </div>
     <div id="admin-panel-content"><div style="text-align:center;padding:60px;color:var(--text2);font-family:var(--mono)">Clique em Atualizar para carregar o painel.</div></div>
   </div>
@@ -693,6 +727,53 @@ tr:first-child td{border-top:none}
     <div class="modal" style="max-width:680px;width:95%">
       <button class="xbtn" onclick="document.getElementById('modal-player-rg').classList.remove('open')">×</button>
       <div id="modal-player-rg-content"></div>
+    </div>
+  </div>
+
+
+  <!-- HIGHLIGHTS OVERLAY -->
+  <div class="hl-overlay" id="hl-overlay">
+    <div class="hl-container" id="hl-container">
+      <div class="hl-progress" id="hl-progress"></div>
+      <div class="hl-top">
+        <div class="hl-top-brand">
+          <img src="/logo.jpg" alt="Imortais">
+          <div class="hl-top-title">HIGHLIGHTS · BOMB IMORTAIS</div>
+        </div>
+        <div class="hl-close" onclick="closeHighlights()" title="Fechar">×</div>
+      </div>
+      <div class="hl-video-wrap" id="hl-video-wrap"></div>
+      <div class="hl-gradient"></div>
+      <div class="hl-nav left"><div class="hl-nav-btn" onclick="hlPrev()">‹</div></div>
+      <div class="hl-nav right"><div class="hl-nav-btn" onclick="hlNext()">›</div></div>
+      <div class="hl-bottom">
+        <div class="hl-info-title" id="hl-title"></div>
+        <div class="hl-info-meta" id="hl-meta"></div>
+        <div class="hl-dots" id="hl-dots"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL: ADICIONAR HIGHLIGHT -->
+  <div class="modal-ov" id="modal-highlight">
+    <div class="modal" style="max-width:480px">
+      <button class="xbtn" onclick="document.getElementById('modal-highlight').classList.remove('open')">×</button>
+      <h2 style="margin-bottom:16px">🎬 Novo Highlight</h2>
+      <div class="fi"><label>Título</label><input type="text" id="hl-add-title" placeholder="Ex: Bomb épico — MOAHBIIZ 13 kills" style="max-width:100%"></div>
+      <div class="fi"><label>Tipo</label>
+        <select id="hl-add-type" onchange="toggleHlType()" style="max-width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px">
+          <option value="youtube">Link do YouTube / YouTube Shorts</option>
+          <option value="upload">Upload de vídeo (mp4, webm)</option>
+        </select>
+      </div>
+      <div class="fi" id="hl-url-fi"><label>URL do YouTube</label><input type="text" id="hl-add-url" placeholder="https://youtube.com/shorts/..." style="max-width:100%"></div>
+      <div class="fi" id="hl-file-fi" style="display:none"><label>Arquivo de vídeo</label>
+        <div class="upl" style="padding:14px"><input type="file" accept="video/mp4,video/webm" onchange="handleHlVideo(event)"><div class="upl-icon">🎬</div><p>Clique para selecionar vídeo (até 50MB)</p></div>
+        <div id="hl-file-status" style="font-size:11px;color:var(--text2);margin-top:6px;font-family:var(--mono)"></div>
+      </div>
+      <div class="alert alert-e" id="hl-add-err" style="display:none;margin-bottom:8px"></div>
+      <div class="flex gap8"><button class="btn btn-gold" onclick="saveHighlight()">Salvar Highlight</button><button class="btn btn-ol" onclick="document.getElementById('modal-highlight').classList.remove('open')">Cancelar</button></div>
     </div>
   </div>
 
@@ -1193,6 +1274,7 @@ function initApp(){
   // Default to dashboard
   const firstBtn=document.querySelector('.nav-btn');
   showPage('dashboard',firstBtn);
+  setTimeout(checkAndShowHighlights, 800);
   // Populate news target dropdown
   if(isAdmin()){
     const sel=document.getElementById('news-target');
@@ -2088,6 +2170,17 @@ async function loadAdminPanel(){
         </div>
       </div>
 
+      <!-- HIGHLIGHTS ADMIN -->
+      <div class="sec">
+        <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Highlights cadastrados</span>
+          <button class="btn btn-gold btn-sm" onclick="openAddHighlight()">+ Novo</button>
+        </div>
+        <div id="admin-highlights-list" style="margin-top:10px">
+          <div class="sp"></div> Carregando...
+        </div>
+      </div>
+
       <!-- EXPORTAÇÃO -->
       <div class="sec">
         <div class="sec-title">Exportação de Dados</div>
@@ -2097,6 +2190,30 @@ async function loadAdminPanel(){
         </div>
         <div id="export-status" style="margin-top:10px;font-size:12px;color:var(--text2);font-family:var(--mono)"></div>
       </div>`;
+
+    // Load highlights list
+    try {
+      const hls = await api('GET', '/api/highlights');
+      const hlWrap = document.getElementById('admin-highlights-list');
+      if (hlWrap) {
+        if (!hls.length) {
+          hlWrap.innerHTML = '<p style="color:var(--text2);font-size:12px;font-family:var(--mono)">Nenhum highlight cadastrado.</p>';
+        } else {
+          hlWrap.innerHTML = hls.map(h => {
+            const seen = Array.isArray(h.seen_by) ? h.seen_by : JSON.parse(h.seen_by || '[]');
+            const thumb = h.type === 'youtube' ? `https://img.youtube.com/vi/${getYtShortId(h.url)||''}/mqdefault.jpg` : null;
+            return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;margin-bottom:8px">
+              ${thumb ? `<img src="${thumb}" style="width:80px;height:45px;object-fit:cover;border-radius:6px;flex-shrink:0">` : `<div style="width:80px;height:45px;background:var(--bg2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎬</div>`}
+              <div style="flex:1">
+                <div style="font-family:var(--display);font-size:13px;color:var(--text)">${h.title}</div>
+                <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:2px">${h.type === 'youtube' ? '▶ YouTube' : '📁 Upload'} · por ${h.author} · ${seen.length} assistiram</div>
+              </div>
+              <button class="btn btn-red btn-sm" onclick="deleteHighlight(${h.id})" style="padding:4px 10px;font-size:10px">Remover</button>
+            </div>`;
+          }).join('');
+        }
+      }
+    } catch(e) { console.warn('Highlights admin:', e); }
 
     // Render charts after DOM update
     setTimeout(()=>{
@@ -2251,6 +2368,223 @@ async function openPlayerRgModal(nick){
     const receberBox=aR.length?'<div style="background:rgba(39,174,96,.06);border:1px solid rgba(39,174,96,.2);border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--green2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">✓ DEVE RECEBER</div>'+Object.entries(itens).map(([item,qty])=>'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-family:var(--mono);font-size:12px">'+item+'</span>'+(qty>1?'<span style="font-family:var(--display);font-size:13px;color:var(--gold2)">×'+qty+'</span>':'')+'</div>').join('')+'</div>':'';
     content.innerHTML=hdr+receberBox+(aR.length?'<div style="margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--green2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Aprovados — aguardando pagamento ('+aR.length+')</div>'+aR.map(mkRow).join('')+'</div>':'')+(pen.length?'<div style="margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--gold2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Pendentes ('+pen.length+')</div>'+pen.map(mkRow).join('')+'</div>':'')+(neg.length?'<div style="margin-bottom:12px"><div style="font-family:var(--display);font-size:10px;color:var(--red2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Negados ('+neg.length+')</div>'+neg.map(mkRow).join('')+'</div>':'')+(pag.length?'<details><summary style="font-family:var(--display);font-size:10px;color:var(--text2);text-transform:uppercase;cursor:pointer;padding:6px 0">Histórico pagos ('+pag.length+')</summary><div style="margin-top:6px">'+pag.map(mkRow).join('')+'</div></details>':'');
   }catch(e){content.innerHTML='<div class="alert alert-e" style="display:block">Erro: '+e.message+'</div>';}
+}
+
+// ════════════════════════════════════════════════════════════════════
+// HIGHLIGHTS — SHORTS DO BOMB
+// ════════════════════════════════════════════════════════════════════
+
+let hlData = [];
+let hlIndex = 0;
+let hlTimer = null;
+let hlVideoData = null; // base64 for upload type
+
+function getYtShortId(url) {
+  // supports youtu.be, youtube.com/shorts/, youtube.com/watch?v=
+  const m = url.match(/(?:shorts\/|youtu\.be\/|watch\?v=)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+async function checkAndShowHighlights() {
+  if (!session || !session.nick) return;
+  try {
+    const items = await api('GET', '/api/highlights');
+    if (!items || !items.length) return;
+    const nick = session.nick;
+    // Show only highlights not yet seen by this nick
+    const unseen = items.filter(h => {
+      const seen = Array.isArray(h.seen_by) ? h.seen_by : JSON.parse(h.seen_by || '[]');
+      return !seen.includes(nick);
+    });
+    if (!unseen.length) return;
+    hlData = unseen;
+    hlIndex = 0;
+    openHighlights();
+  } catch(e) { console.warn('Highlights:', e); }
+}
+
+function openHighlights() {
+  const overlay = document.getElementById('hl-overlay');
+  if (!overlay || !hlData.length) return;
+  overlay.classList.add('open');
+  renderHlDots();
+  loadHlItem(0);
+  // Swipe support
+  let startY = 0;
+  const container = document.getElementById('hl-container');
+  container.ontouchstart = e => { startY = e.touches[0].clientY; };
+  container.ontouchend = e => {
+    const dy = startY - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > 50) dy > 0 ? hlNext() : hlPrev();
+  };
+}
+
+function closeHighlights() {
+  clearTimeout(hlTimer);
+  const overlay = document.getElementById('hl-overlay');
+  overlay.classList.remove('open');
+  // Mark all shown as seen
+  const nick = session?.nick;
+  if (nick) {
+    hlData.forEach(h => api('POST', `/api/highlights/${h.id}/seen`, { nick }).catch(()=>{}));
+  }
+  // Clear video
+  document.getElementById('hl-video-wrap').innerHTML = '';
+}
+
+function renderHlDots() {
+  const dots = document.getElementById('hl-dots');
+  if (!dots) return;
+  dots.innerHTML = hlData.map((_, i) =>
+    `<div class="hl-dot ${i === hlIndex ? 'active' : ''}" onclick="loadHlItem(${i})"></div>`
+  ).join('');
+  // Progress bars
+  const prog = document.getElementById('hl-progress');
+  prog.innerHTML = hlData.map((_, i) =>
+    `<div class="hl-prog-bar"><div class="hl-prog-fill ${i < hlIndex ? 'done' : ''}" id="hlp-${i}"></div></div>`
+  ).join('');
+}
+
+function loadHlItem(index) {
+  clearTimeout(hlTimer);
+  hlIndex = Math.max(0, Math.min(index, hlData.length - 1));
+  const h = hlData[hlIndex];
+  const wrap = document.getElementById('hl-video-wrap');
+  wrap.innerHTML = '';
+
+  // Update dots
+  document.querySelectorAll('.hl-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === hlIndex);
+  });
+  // Reset progress bars
+  document.querySelectorAll('.hl-prog-fill').forEach((b, i) => {
+    b.style.transition = 'none';
+    b.style.width = i < hlIndex ? '100%' : '0%';
+    b.classList.remove('active');
+  });
+
+  document.getElementById('hl-title').textContent = h.title;
+  document.getElementById('hl-meta').textContent = `por ${h.author} · ${(h.created_at||'').split('T')[0]}`;
+
+  const DURATION = 12000;
+
+  if (h.type === 'youtube') {
+    const vid = getYtShortId(h.url) || h.url;
+    wrap.innerHTML = `<iframe src="https://www.youtube.com/embed/${vid}?autoplay=1&mute=0&controls=0&loop=1&playlist=${vid}&modestbranding=1&rel=0" allowfullscreen allow="autoplay"></iframe>`;
+    startHlProgress(DURATION);
+  } else {
+    // uploaded video
+    const video = document.createElement('video');
+    video.src = h.url;
+    video.autoplay = true;
+    video.muted = false;
+    video.playsInline = true;
+    video.loop = false;
+    video.style.cssText = 'width:100%;height:100%;object-fit:contain';
+    video.onloadedmetadata = () => {
+      const dur = Math.min((video.duration || 12) * 1000, 12000);
+      startHlProgress(dur);
+    };
+    video.onended = () => hlNext();
+    wrap.appendChild(video);
+  }
+
+  // Mark as seen immediately
+  const nick = session?.nick;
+  if (nick) api('POST', `/api/highlights/${h.id}/seen`, { nick }).catch(() => {});
+}
+
+function startHlProgress(duration) {
+  const bar = document.getElementById(`hlp-${hlIndex}`);
+  if (bar) {
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    setTimeout(() => {
+      bar.style.transition = `width ${duration}ms linear`;
+      bar.style.width = '100%';
+    }, 50);
+  }
+  hlTimer = setTimeout(() => hlNext(), duration);
+}
+
+function hlNext() {
+  clearTimeout(hlTimer);
+  if (hlIndex >= hlData.length - 1) { closeHighlights(); return; }
+  loadHlItem(hlIndex + 1);
+}
+function hlPrev() {
+  clearTimeout(hlTimer);
+  if (hlIndex <= 0) return;
+  loadHlItem(hlIndex - 1);
+}
+
+// ── ADMIN: Adicionar highlights ──────────────────────────────────────────────
+function openAddHighlight() {
+  document.getElementById('modal-highlight').classList.add('open');
+  document.getElementById('hl-add-title').value = '';
+  document.getElementById('hl-add-url').value = '';
+  document.getElementById('hl-add-err').style.display = 'none';
+  hlVideoData = null;
+  toggleHlType();
+}
+
+function toggleHlType() {
+  const t = document.getElementById('hl-add-type').value;
+  document.getElementById('hl-url-fi').style.display = t === 'youtube' ? 'block' : 'none';
+  document.getElementById('hl-file-fi').style.display = t === 'upload' ? 'block' : 'none';
+}
+
+async function handleHlVideo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('hl-file-status');
+  if (file.size > 50 * 1024 * 1024) {
+    status.innerHTML = '<span style="color:var(--red2)">Arquivo muito grande (máx 50MB)</span>';
+    return;
+  }
+  status.innerHTML = '<span class="sp"></span> Carregando vídeo...';
+  const reader = new FileReader();
+  reader.onload = r => {
+    hlVideoData = r.result;
+    status.innerHTML = `<span style="color:var(--green2)">✓ ${file.name} (${(file.size/1024/1024).toFixed(1)}MB)</span>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveHighlight() {
+  const title = document.getElementById('hl-add-title').value.trim();
+  const type = document.getElementById('hl-add-type').value;
+  const errEl = document.getElementById('hl-add-err');
+  errEl.style.display = 'none';
+
+  if (!title) { errEl.textContent = 'Título obrigatório.'; errEl.style.display = 'block'; return; }
+
+  let url = '';
+  if (type === 'youtube') {
+    url = document.getElementById('hl-add-url').value.trim();
+    if (!url) { errEl.textContent = 'URL obrigatória.'; errEl.style.display = 'block'; return; }
+  } else {
+    if (!hlVideoData) { errEl.textContent = 'Selecione um vídeo.'; errEl.style.display = 'block'; return; }
+    url = hlVideoData;
+  }
+
+  try {
+    await api('POST', '/api/highlights', { title, type, url });
+    document.getElementById('modal-highlight').classList.remove('open');
+    hlVideoData = null;
+    loadAdminPanel();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function deleteHighlight(id) {
+  if (!confirm('Remover este highlight?')) return;
+  try {
+    await api('DELETE', `/api/highlights/${id}`);
+    loadAdminPanel();
+  } catch(e) { alert(e.message); }
 }
 
 </script>

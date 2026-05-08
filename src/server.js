@@ -557,6 +557,52 @@ app.delete('/api/videos/:id', requireAdmin, async (req, res) => {
   catch (e) { res.status(500).json({ error: 'Erro.' }); }
 });
 
+
+// ── HIGHLIGHTS (Shorts do bomb) ──────────────────────────────────────────────
+app.get('/api/highlights', async (req, res) => {
+  try {
+    const rows = await pool.query('SELECT * FROM highlights ORDER BY created_at DESC');
+    res.json(rows.rows);
+  } catch(e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
+app.post('/api/highlights', async (req, res) => {
+  if (!isPrivileged(req)) return res.status(403).json({ error: 'Acesso negado.' });
+  const { title, type, url } = req.body;
+  const author = req.headers['x-officer-nick'] || 'ADMIN';
+  if (!title || !type || !url) return res.status(400).json({ error: 'Campos obrigatórios.' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO highlights (title, type, url, author) VALUES ($1,$2,$3,$4) RETURNING *',
+      [title, type, url, author]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
+app.post('/api/highlights/:id/seen', async (req, res) => {
+  const { nick } = req.body;
+  if (!nick) return res.status(400).json({ error: 'Nick obrigatório.' });
+  try {
+    await pool.query(
+      `UPDATE highlights SET seen_by = (
+        CASE WHEN seen_by @> $1::jsonb THEN seen_by
+        ELSE seen_by || $1::jsonb END
+      ) WHERE id = $2`,
+      [JSON.stringify([nick]), req.params.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
+app.delete('/api/highlights/:id', async (req, res) => {
+  if (!isPrivileged(req)) return res.status(403).json({ error: 'Acesso negado.' });
+  try {
+    await pool.query('DELETE FROM highlights WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 initDB().then(() => {

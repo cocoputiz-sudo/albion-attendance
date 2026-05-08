@@ -121,7 +121,19 @@ async function initDB() {
       ALTER TABLE kills ADD COLUMN IF NOT EXISTS screenshots JSONB DEFAULT '[]';
     `);
 
-    console.log('[DB] Tabelas criadas/verificadas com sucesso.');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS highlights (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        type VARCHAR(10) NOT NULL CHECK (type IN ('upload','youtube')),
+        url TEXT NOT NULL,
+        author VARCHAR(50) NOT NULL,
+        seen_by JSONB DEFAULT '[]',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+        console.log('[DB] Tabelas criadas/verificadas com sucesso.');
   } finally {
     client.release();
   }
