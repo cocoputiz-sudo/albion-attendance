@@ -654,7 +654,6 @@ tr:first-child td{border-top:none}
     </div>
   </div>
 
-
   <!-- RANKING & MVP -->
   <div id="page-ranking" class="page">
     <div class="flex aic jb wrap" style="margin-bottom:16px;margin-top:4px;gap:10px">
@@ -678,7 +677,6 @@ tr:first-child td{border-top:none}
     </div>
     <div id="admin-panel-content"><div style="text-align:center;padding:60px;color:var(--text2);font-family:var(--mono)">Clique em Atualizar para carregar o painel.</div></div>
   </div>
-
 
   <!-- MODAL: PERFIL RE-GEAR -->
   <div class="modal-ov" id="modal-player-rg">
@@ -775,7 +773,6 @@ tr:first-child td{border-top:none}
 </div><!-- /app -->
 
 <script>
-
 
 // ── FEED ──────────────────────────────────────────────────────────────────────
 async function loadFeed(){
@@ -1647,9 +1644,8 @@ function closeModal(){document.getElementById('modal-confirm').classList.remove(
 // login-nick populado pelo initDropdowns abaixo
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
-let dashCharts={kills:null,att:null};
 
+let dashCharts={kills:null,att:null};
 
 async function loadDashboard(){
   try{
@@ -1744,7 +1740,6 @@ function setRkMonth(){const now=new Date(),s=new Date(now.getFullYear(),now.getM
 function setRkAll(){document.getElementById('rk-from').value='2024-01-01';document.getElementById('rk-to').value='2099-12-31';}
 function getDateOffset(d){const dt=new Date();dt.setDate(dt.getDate()+d);return dt.toISOString().slice(0,10);}
 function getTodayStr(){return new Date().toISOString().slice(0,10);}
-
 
 // ════════════════════════════════════════════════════════════════════
 // FEATURE 3 — SISTEMA DE RANKING, MVP & MEDALHAS
@@ -1924,7 +1919,6 @@ async function loadRanking(){
     document.getElementById('rk-content').innerHTML=`<div class="alert alert-e" style="display:block">Erro ao carregar ranking: ${e.message}</div>`;
   }
 }
-
 
 // ════════════════════════════════════════════════════════════════════
 // FEATURE 6 — PAINEL ADMIN & EXPORTAÇÃO EXCEL
@@ -2147,7 +2141,6 @@ async function exportExcel(){
   }
 }
 
-
 // ════════ OCR + FUZZY MATCH ════════
 let ocrReady=false;
 async function initOCR(){if(ocrReady)return true;try{if(typeof Tesseract==='undefined'){await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}ocrReady=true;return true;}catch(e){return false;}}
@@ -2158,7 +2151,6 @@ async function ocrKillFeed(file,el){if(!file)return[];if(el)el.innerHTML='<span 
 async function ocrAttendancePrint(file){const el=document.getElementById('ocr-att-status');if(el)el.innerHTML='<span class="sp"></span> Lendo OCR...';const text=await runOCR(file);const found=text?extractPlayersFromOCR(text):[];if(!found.length){if(el)el.innerHTML='<span style="color:var(--gold2)">⚠ Sem nicks. Texto OCR: <span style="font-size:10px;color:var(--text2)">'+(text||'vazio').slice(0,150)+'</span></span>';return;}let marked=0;for(const nick of found)document.querySelectorAll('.player-row').forEach(row=>{if(row.querySelector('.pname')?.textContent.trim()===nick){const btn=row.querySelector('.bp');if(btn&&!btn.classList.contains('on')){btn.click();marked++;}}});if(el)el.innerHTML='<span style="color:var(--green2)">✓ Marcou '+marked+' player(s): <span style="color:var(--gold2)">'+found.join(', ')+'</span></span>';}
 function hookAttendanceOCR(){if(document.getElementById('ocr-att-status'))return;const area=document.querySelector('#att-section .upl');if(!area)return;const d=document.createElement('div');d.id='ocr-att-status';d.style.cssText='margin-top:8px;font-size:12px;min-height:18px;font-family:var(--mono)';area.parentNode.insertBefore(d,area.nextSibling);const fi=area.querySelector('input[type=file]');if(fi){const o=fi.onchange;fi.onchange=async function(e){if(o)o.call(this,e);if(e.target.files[0])await ocrAttendancePrint(e.target.files[0])};}}
 function hookKillsOCR(){if(document.getElementById('ocr-kill-status'))return;const area=document.getElementById('kill-upl-area');if(!area)return;const d=document.createElement('div');d.id='ocr-kill-status';d.style.cssText='margin-top:8px;font-size:12px;min-height:18px;font-family:var(--mono)';area.parentNode.insertBefore(d,area.nextSibling);const fi=area.querySelector('input[type=file]');if(fi){const o=fi.onchange;fi.onchange=async function(e){if(o)o.call(this,e);const f=Array.from(e.target.files||[]);if(f[0])await ocrKillFeed(f[0],document.getElementById('ocr-kill-status'))};}}
-
 
 async function openPlayerRgModal(nick){
   const modal=document.getElementById('modal-player-rg'),content=document.getElementById('modal-player-rg-content');
