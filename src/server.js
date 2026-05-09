@@ -10,7 +10,8 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_PASS = process.env.ADMIN_PASS || 'senha123admin22';
 
 const OFFICERS = {
-  'RAGNALDOKHUN': process.env.OFFICER_RAGNALDOKHUN || 'ragna12senha12'
+  'RAGNALDOKHUN': process.env.OFFICER_RAGNALDOKHUN || 'ragna12senha12',
+  'WHATSAPPBR': process.env.OFFICER_WHATSAPPBR || 'senhawhats123'
 };
 
 const PLAYERS = [
