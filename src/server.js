@@ -168,14 +168,46 @@ app.delete('/api/members/:nick', requireAdmin, async (req, res) => {
 // ── Attendance ────────────────────────────────────────────────────────────────
 app.get('/api/attendance', async (req, res) => {
   const { date, from, to } = req.query;
-  // Range mode: returns flat array of {date, player, cta, status}
+  // Range mode: returns flat array with auto-absence for past days
   if (from && to) {
     try {
+      // Get all explicit records
       const rows = await pool.query(
         'SELECT date::text, player, cta, status FROM attendance WHERE date >= $1 AND date <= $2 ORDER BY date ASC',
         [from, to]
       );
-      return res.json(rows.rows);
+      const records = rows.rows;
+
+      // Find which date+cta combos had at least 1 record (CTA happened)
+      const activeCtas = new Set(records.map(r => r.date + '_' + r.cta));
+
+      // For past days: add absent record for players with no record on active CTAs
+      const today = new Date().toISOString().slice(0, 10);
+      const CTAS = ['15:30 UTC', '17:10 UTC', '19:10 UTC', '23:10 UTC'];
+
+      // Get all dates in range
+      const dates = [];
+      let cur = new Date(from);
+      const end = new Date(to);
+      while (cur <= end) {
+        dates.push(cur.toISOString().slice(0, 10));
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      // For each past date+cta that was active, fill missing players as absent
+      const extra = [];
+      dates.forEach(dt => {
+        if (dt >= today) return; // only past days
+        CTAS.forEach(cta => {
+          if (!activeCtas.has(dt + '_' + cta)) return; // CTA didn't happen
+          PLAYERS.forEach(player => {
+            const hasRecord = records.some(r => r.date === dt && r.cta === cta && r.player === player);
+            if (!hasRecord) extra.push({ date: dt, player, cta, status: 'absent', auto: true });
+          });
+        });
+      });
+
+      return res.json([...records, ...extra]);
     } catch (e) { return res.status(500).json({ error: 'Erro ao buscar attendance.' }); }
   }
   if (!date) return res.status(400).json({ error: 'date obrigatório' });
@@ -207,6 +239,11 @@ app.post('/api/attendance', async (req, res) => {
   if (!priv && player.toUpperCase() !== nick.toUpperCase()) return res.status(403).json({ error: 'Você só pode marcar sua própria presença.' });
   if (!['present','absent'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
   if (!PLAYERS.includes(player.toUpperCase())) return res.status(400).json({ error: 'Player não encontrado.' });
+  // Block players from editing past days — only admin/officer can edit past
+  if (!priv) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (date < today) return res.status(403).json({ error: 'Não é possível editar presenças de dias anteriores.' });
+  }
   try {
     await pool.query(`INSERT INTO attendance (date, cta, player, status) VALUES ($1,$2,$3,$4) ON CONFLICT (date, cta, player) DO UPDATE SET status = EXCLUDED.status`,
       [date, cta, player.toUpperCase(), status]);

@@ -1383,17 +1383,23 @@ function selectCTA(cta){
 function renderPlayerList(){
   const data=attData[selectedCTA]||{present:[],absent:[]};
   const inactive=inactiveNicks();
+  const today=new Date().toISOString().slice(0,10);
+  const selDate=document.getElementById('att-date').value;
+  const isPastDay=selDate<today;
   const html=PLAYERS.map(p=>{
     const isP=data.present.includes(p),isA=data.absent.includes(p);
-    const isSelf=p===session.nick,canToggle=isAdmin()||isSelf;
+    const isSelf=p===session.nick;
+    // Players can only edit today; admin/officer can edit any day
+    const canToggle=(isAdmin()?true:isSelf&&!isPastDay)&&!inactive.has(p);
     const isInactive=inactive.has(p);
     const cls=`player-row ${isP?'present':isA?'absent':''} ${isSelf&&!isAdmin()?'self-row':''} ${isInactive?'inactive-row':''}`;
-    const dis=canToggle&&!isInactive?'':'disabled';
+    const dis=canToggle?'':'disabled';
+    const pastLock=isPastDay&&!isAdmin()?'title="Dia encerrado — só officer/admin pode alterar"':'';
     return`<div class="${cls}" id="pr-${p}">
-      <span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}${isInactive?' <span style="font-size:9px;color:var(--text2)">[inativo]</span>':''}</span>
+      <span class="pname">${p}${isSelf&&!isAdmin()?' <span style="font-size:10px;color:var(--blue)">(você)</span>':''}${isInactive?' <span style="font-size:9px;color:var(--text2)">[inativo]</span>':''}${isPastDay&&!isAdmin()&&isSelf?' <span style="font-size:9px;color:var(--gold-dim)">🔒</span>':''}</span>
       <div class="tbtn">
-        <button class="bp ${isP?'on':''}" onclick="${canToggle&&!isInactive?`tgl('${p}',true)`:''}" ${dis}>✓</button>
-        <button class="bp ba ${isA?'on':''}" onclick="${canToggle&&!isInactive?`tgl('${p}',false)`:''}" ${dis}>✗</button>
+        <button class="bp ${isP?'on':''}" onclick="${canToggle?`tgl('${p}',true)`:''}" ${dis} ${pastLock}>✓</button>
+        <button class="bp ba ${isA?'on':''}" onclick="${canToggle?`tgl('${p}',false)`:''}" ${dis} ${pastLock}>✗</button>
       </div></div>`;
   }).join('');
   document.getElementById('player-list').innerHTML=html;
