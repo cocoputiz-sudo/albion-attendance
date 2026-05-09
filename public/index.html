@@ -366,7 +366,7 @@ tr:first-child td{border-top:none}
 <!-- ═══════ LOGIN ═══════ -->
 <div id="login-screen" style="position:relative;overflow:hidden">
   <div style="position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center;overflow:hidden">
-    <img src="/logo.jpg" style="width:520px;height:auto;opacity:.08;filter:blur(1px) grayscale(20%)">
+    <img src="/bg.png" style="width:680px;height:auto;opacity:.10;filter:blur(1px)">
   </div>
   <div style="display:flex;align-items:center;gap:16px;padding:20px 0 24px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative;z-index:1">
     <div style="position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)"></div>
@@ -1833,10 +1833,26 @@ async function loadDashboardAttTable(){
     const ctas=['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'],cs=['15:30','17:10','19:10','23:10'];
     const pMap={};PLAYERS.forEach(p=>{pMap[p]={};dates.forEach(dt=>ctas.forEach(c=>{pMap[p][dt+'_'+c]=null;}));});
     allRecs.forEach(r=>{const dt=(r.date||'').split('T')[0];if(pMap[r.player]&&dt)pMap[r.player][dt+'_'+r.cta]=r.status;});
-    const sorted=PLAYERS.map(p=>{let pr=0,tot=0;dates.forEach(dt=>ctas.forEach(c=>{const v=pMap[p][dt+'_'+c];if(v!==null){tot++;if(v==='present')pr++;}}));return{p,pct:tot>0?Math.round(pr/tot*100):null};}).sort((a,b)=>(b.pct??-1)-(a.pct??-1));
+    // Find which date+cta combos had ANY record (at least one player attended)
+    const activeCtas=new Set();
+    allRecs.forEach(r=>{const dt=(r.date||'').split('T')[0];if(dt)activeCtas.add(dt+'_'+r.cta);});
+    // null on an active CTA = absent. null on a CTA with zero records = skip (no CTA happened)
+    const sorted=PLAYERS.map(p=>{
+      let pr=0,tot=0;
+      dates.forEach(dt=>ctas.forEach(c=>{
+        const key=dt+'_'+c;
+        const v=pMap[p][key];
+        if(activeCtas.has(key)){
+          tot++; // CTA happened
+          if(v==='present')pr++; // only present if explicitly marked
+          // null or absent = falta
+        }
+      }));
+      return{p,pct:tot>0?Math.round(pr/tot*100):null,pr,tot};
+    }).sort((a,b)=>(b.pct??-1)-(a.pct??-1));
     const show=dates.slice(-3);
     let th='<tr><th>Player</th>'+show.map(dt=>'<th colspan="4" style="text-align:center;border-left:1px solid var(--border2)">'+dt.slice(5)+'</th>').join('')+'<th style="border-left:1px solid var(--border2)">7d %</th></tr><tr><th></th>'+show.map(()=>cs.map(c=>'<th style="font-size:9px;color:var(--text3);padding:3px 4px">'+c+'</th>').join('')).join('')+'<th></th></tr>';
-    let tb=sorted.map(({p,pct})=>{const clr=pct===null?'var(--text2)':pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';return'<tr><td><span style="font-family:var(--mono);font-size:12px">'+p+'</span></td>'+show.map(dt=>ctas.map(c=>{const v=pMap[p][dt+'_'+c];return v===null?'<td style="text-align:center"><span style="color:var(--text3)">·</span></td>':v==='present'?'<td style="text-align:center"><span style="color:var(--green2)">✓</span></td>':'<td style="text-align:center"><span style="color:var(--red2);font-size:10px">✗</span></td>';}).join('')).join('')+'<td style="border-left:1px solid var(--border2);text-align:center"><span style="font-family:var(--display);font-size:13px;font-weight:600;color:'+clr+'">'+(pct!==null?pct+'%':'—')+'</span></td></tr>';}).join('');
+    let tb=sorted.map(({p,pct})=>{const clr=pct===null?'var(--text2)':pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';return'<tr><td><span style="font-family:var(--mono);font-size:12px">'+p+'</span></td>'+show.map(dt=>ctas.map(c=>{const v=pMap[p][dt+'_'+c];const isActive=activeCtas.has(dt+'_'+c);return v===null?(isActive?'<td style="text-align:center"><span style="color:var(--red2);font-size:10px">✗</span></td>':'<td style="text-align:center"><span style="color:var(--text3)">·</span></td>'):v==='present'?'<td style="text-align:center"><span style="color:var(--green2)">✓</span></td>':'<td style="text-align:center"><span style="color:var(--red2);font-size:10px">✗</span></td>';}).join('')).join('')+'<td style="border-left:1px solid var(--border2);text-align:center"><span style="font-family:var(--display);font-size:13px;font-weight:600;color:'+clr+'">'+(pct!==null?pct+'%':'—')+'</span></td></tr>';}).join('');
     tbl.innerHTML='<table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table>';
   }catch(e){document.getElementById('dash-att-table').innerHTML='<p style="color:var(--red2);font-size:12px;padding:10px;font-family:var(--mono)">Erro: '+e.message+'</p>';}
 }
@@ -1934,7 +1950,9 @@ async function computeRankingData(from,to){
     // All-time attendance
     const attP = parseInt(statsAll.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0));
     const attA = parseInt(statsAll.attendance.filter(a=>a.player===nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0));
-    const attTotal = attP+attA;
+    // Total = todas as CTAs registradas (presença + ausência + faltas automáticas)
+    const totalPossible = statsAll.totalCTAs || (attP + attA);
+    const attTotal = totalPossible > 0 ? totalPossible : (attP + attA);
     const attendancePct = attTotal>0?Math.round(attP/attTotal*100):0;
     // Range attendance
     const attPR = parseInt(statsRange.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0));
@@ -2156,8 +2174,8 @@ async function loadAdminPanel(){
           ${[...PLAYERS].map(p=>{
             const pr=statsAll.attendance.filter(a=>a.player===p&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
             const ab=statsAll.attendance.filter(a=>a.player===p&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
-            const tot=pr+ab;
-            const pct=tot>0?Math.round(pr/tot*100):0;
+            const tot=statsAll.totalCTAs||Math.max(pr+ab,1);
+            const pct=Math.round(pr/tot*100);
             return{p,pr,ab,tot,pct};
           }).sort((a,b)=>b.pct-a.pct).map(({p,pr,ab,pct})=>{
             const clr=pct>=70?'var(--green2)':pct>=40?'var(--gold2)':'var(--red2)';
@@ -2537,19 +2555,50 @@ function toggleHlType() {
   document.getElementById('hl-file-fi').style.display = t === 'upload' ? 'block' : 'none';
 }
 
-async function handleHlVideo(e) {
+function handleHlVideo(e) {
   const file = e.target.files[0];
   if (!file) return;
   const status = document.getElementById('hl-file-status');
+  hlVideoData = null;
   if (file.size > 50 * 1024 * 1024) {
     status.innerHTML = '<span style="color:var(--red2)">Arquivo muito grande (máx 50MB)</span>';
     return;
   }
-  status.innerHTML = '<span class="sp"></span> Carregando vídeo...';
+  const sizeMB = (file.size/1024/1024).toFixed(1);
+  status.innerHTML = `<div style="margin-top:4px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px">
+      <span>${file.name} (${sizeMB}MB)</span><span id="hl-pct">0%</span>
+    </div>
+    <div style="height:4px;background:var(--border2);border-radius:2px;overflow:hidden">
+      <div id="hl-bar" style="height:100%;width:0%;background:var(--gold);border-radius:2px;transition:width .1s"></div>
+    </div>
+    <div id="hl-eta" style="font-size:10px;color:var(--text2);margin-top:4px"></div>
+  </div>`;
+  const startTime = Date.now();
   const reader = new FileReader();
+  reader.onprogress = ev => {
+    if (!ev.lengthComputable) return;
+    const pct = Math.round(ev.loaded / ev.total * 100);
+    const elapsed = (Date.now() - startTime) / 1000;
+    const rate = ev.loaded / elapsed;
+    const remaining = rate > 0 ? Math.ceil((ev.total - ev.loaded) / rate) : 0;
+    const bar = document.getElementById('hl-bar');
+    const pctEl = document.getElementById('hl-pct');
+    const eta = document.getElementById('hl-eta');
+    if (bar) bar.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (eta) eta.textContent = remaining > 0 ? `⏱ ~${remaining}s restantes` : '';
+  };
   reader.onload = r => {
     hlVideoData = r.result;
-    status.innerHTML = `<span style="color:var(--green2)">✓ ${file.name} (${(file.size/1024/1024).toFixed(1)}MB)</span>`;
+    status.innerHTML = `<span style="color:var(--green2);font-size:12px">✅ ${file.name} (${sizeMB}MB) — pronto para salvar!</span>`;
+    // Auto-clear error if any
+    const err = document.getElementById('hl-add-err');
+    if (err) err.style.display = 'none';
+  };
+  reader.onerror = () => {
+    status.innerHTML = '<span style="color:var(--red2)">Erro ao ler arquivo.</span>';
+    hlVideoData = null;
   };
   reader.readAsDataURL(file);
 }
@@ -2567,7 +2616,11 @@ async function saveHighlight() {
     url = document.getElementById('hl-add-url').value.trim();
     if (!url) { errEl.textContent = 'URL obrigatória.'; errEl.style.display = 'block'; return; }
   } else {
-    if (!hlVideoData) { errEl.textContent = 'Selecione um vídeo.'; errEl.style.display = 'block'; return; }
+    if (!hlVideoData) {
+      const hasFile = document.querySelector('#hl-file-fi input[type=file]')?.files?.length > 0;
+      errEl.textContent = hasFile ? '⏳ Ainda carregando... aguarde o ✅ aparecer e tente novamente.' : 'Selecione um vídeo.';
+      errEl.style.display = 'block'; return;
+    }
     url = hlVideoData;
   }
 
