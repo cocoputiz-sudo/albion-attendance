@@ -490,10 +490,10 @@ tr:first-child td{border-top:none}
       <div class="utc-clock"><div class="utc-dot"></div><div><div class="utc-time" id="utc-clock">--:--:-- UTC</div><div class="utc-label">Horário Universal</div></div></div>
     </div>
     <div class="cta-grid">
-      <div class="cta-card" onclick="selectCTA('15:30 UTC')" id="cta-1530"><div class="cta-time">15:30</div><div class="cta-lbl">CTA 1 · Tarde</div><div class="cta-cnt" id="cnt-1530">—</div><div id="cta-action-1530" style="margin-top:6px"></div></div>
-      <div class="cta-card" onclick="selectCTA('17:10 UTC')" id="cta-1710"><div class="cta-time">17:10</div><div class="cta-lbl">CTA 2 · Tarde</div><div class="cta-cnt" id="cnt-1710">—</div><div id="cta-action-1710" style="margin-top:6px"></div></div>
-      <div class="cta-card" onclick="selectCTA('19:10 UTC')" id="cta-1910"><div class="cta-time">19:10</div><div class="cta-lbl">CTA 3 · Noite</div><div class="cta-cnt" id="cnt-1910">—</div><div id="cta-action-1910" style="margin-top:6px"></div></div>
-      <div class="cta-card" onclick="selectCTA('23:10 UTC')" id="cta-2310"><div class="cta-time">23:10</div><div class="cta-lbl">CTA 4 · Noite</div><div class="cta-cnt" id="cnt-2310">—</div><div id="cta-action-2310" style="margin-top:6px"></div></div>
+      <div class="cta-card" id="cta-1530" onclick="if(!event.target.closest('button'))selectCTA('15:30 UTC')"><div class="cta-time">15:30</div><div class="cta-lbl">CTA 1 · Tarde</div><div class="cta-cnt" id="cnt-1530">—</div><div id="cta-action-1530" style="margin-top:6px"></div></div>
+      <div class="cta-card" id="cta-1710" onclick="if(!event.target.closest('button'))selectCTA('17:10 UTC')"><div class="cta-time">17:10</div><div class="cta-lbl">CTA 2 · Tarde</div><div class="cta-cnt" id="cnt-1710">—</div><div id="cta-action-1710" style="margin-top:6px"></div></div>
+      <div class="cta-card" id="cta-1910" onclick="if(!event.target.closest('button'))selectCTA('19:10 UTC')"><div class="cta-time">19:10</div><div class="cta-lbl">CTA 3 · Noite</div><div class="cta-cnt" id="cnt-1910">—</div><div id="cta-action-1910" style="margin-top:6px"></div></div>
+      <div class="cta-card" id="cta-2310" onclick="if(!event.target.closest('button'))selectCTA('23:10 UTC')"><div class="cta-time">23:10</div><div class="cta-lbl">CTA 4 · Noite</div><div class="cta-cnt" id="cnt-2310">—</div><div id="cta-action-2310" style="margin-top:6px"></div></div>
     </div>
     <div class="sec" id="att-section" style="display:none">
       <div class="flex aic jb gap8 wrap">
