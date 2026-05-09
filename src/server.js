@@ -178,8 +178,15 @@ app.get('/api/attendance', async (req, res) => {
       );
       const records = rows.rows;
 
-      // Find which date+cta combos had at least 1 record (CTA happened)
-      const activeCtas = new Set(records.map(r => r.date + '_' + r.cta));
+      // Get disabled CTAs in range
+      const schedRows = await pool.query(
+        'SELECT date::text, cta FROM cta_schedule WHERE date >= $1 AND date <= $2 AND active = false',
+        [from, to]
+      );
+      const disabledCtas = new Set(schedRows.rows.map(r => r.date + '_' + r.cta));
+
+      // Find which date+cta combos had at least 1 record (CTA happened) — exclude disabled
+      const activeCtas = new Set(records.filter(r => !disabledCtas.has(r.date+'_'+r.cta)).map(r => r.date + '_' + r.cta));
 
       // For past days: add absent record for players with no record on active CTAs
       const today = new Date().toISOString().slice(0, 10);
@@ -199,6 +206,7 @@ app.get('/api/attendance', async (req, res) => {
       dates.forEach(dt => {
         if (dt >= today) return; // only past days
         CTAS.forEach(cta => {
+          if (disabledCtas.has(dt + '_' + cta)) return; // CTA foi cancelada
           if (!activeCtas.has(dt + '_' + cta)) return; // CTA didn't happen
           PLAYERS.forEach(player => {
             const hasRecord = records.some(r => r.date === dt && r.cta === cta && r.player === player);
@@ -637,6 +645,36 @@ app.delete('/api/highlights/:id', async (req, res) => {
   if (!isPrivileged(req)) return res.status(403).json({ error: 'Acesso negado.' });
   try {
     await pool.query('DELETE FROM highlights WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
+
+// ── CTA Schedule (ativar/desativar CTAs por dia) ─────────────────────────────
+app.get('/api/cta-schedule', async (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.status(400).json({ error: 'date obrigatório' });
+  try {
+    const rows = await pool.query('SELECT cta, active FROM cta_schedule WHERE date = $1', [date]);
+    // Return map: {cta: active}. Default all active if no record.
+    const ALL_CTAS = ['15:30 UTC', '17:10 UTC', '19:10 UTC', '23:10 UTC'];
+    const map = {};
+    ALL_CTAS.forEach(c => map[c] = true); // default all active
+    rows.rows.forEach(r => map[r.cta] = r.active);
+    res.json(map);
+  } catch(e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
+app.post('/api/cta-schedule', async (req, res) => {
+  if (!isPrivileged(req)) return res.status(403).json({ error: 'Acesso negado.' });
+  const { date, cta, active } = req.body;
+  if (!date || !cta) return res.status(400).json({ error: 'date e cta obrigatórios.' });
+  try {
+    await pool.query(
+      `INSERT INTO cta_schedule (date, cta, active) VALUES ($1,$2,$3)
+       ON CONFLICT (date, cta) DO UPDATE SET active = EXCLUDED.active`,
+      [date, cta, active !== false]
+    );
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Erro.' }); }
 });

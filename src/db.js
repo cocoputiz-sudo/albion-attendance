@@ -133,6 +133,17 @@ async function initDB() {
       );
     `);
 
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS cta_schedule (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        cta VARCHAR(20) NOT NULL,
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(date, cta)
+      );
+    `);
+
         console.log('[DB] Tabelas criadas/verificadas com sucesso.');
   } finally {
     client.release();

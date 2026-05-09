@@ -1158,7 +1158,7 @@ function getAllBuilds(){
 const PIZZA_COLORS=['#c9a227','#2ecc71','#3b8beb','#9b59b6','#e67e22','#1abc9c','#e91e63','#34495e','#e03a3a','#f39c12','#16a085','#8e44ad','#2980b9','#27ae60','#d35400','#7f8c8d','#2c3e50','#c0392b','#1abc9c','#f1c40f','#95a5a6','#3498db','#e74c3c','#2ecc71'];
 
 let session={role:null,nick:null,adminPass:null,officerNick:null};
-let selectedCTA=null,imgs=[null,null,null],attData={},statsCache=null;
+let selectedCTA=null,imgs=[null,null,null],attData={},ctaSchedule={},statsCache=null;
 let charts={killsGuild:null,attGuild:null,rgGuild:null,radar:null};
 let selectedBuild=null,selectedDeathRole=null,membersCache=[];
 let deactNick=null;
@@ -1361,16 +1361,51 @@ function getOverchargeData(){
 // ── ATTENDANCE ────────────────────────────────────────────────────────────────
 async function loadAttendanceCounts(){
   const date=document.getElementById('att-date').value;
-  try{attData=await api('GET',`/api/attendance?date=${date}`);}catch(e){attData={};}
-  ['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'].forEach(cta=>{
+  try{
+    [attData, ctaSchedule]=await Promise.all([
+      api('GET',`/api/attendance?date=${date}`).catch(()=>({})),
+      api('GET',`/api/cta-schedule?date=${date}`).catch(()=>({'15:30 UTC':true,'17:10 UTC':true,'19:10 UTC':true,'23:10 UTC':true}))
+    ]);
+  }catch(e){attData={};ctaSchedule={};}
+  const CTAS=['15:30 UTC','17:10 UTC','19:10 UTC','23:10 UTC'];
+  CTAS.forEach(cta=>{
     const key=cta.replace(':','').replace(' UTC','');
-    const cnt=attData[cta]?attData[cta].present.length:0;
-    document.getElementById('cnt-'+key).textContent=cnt+' presentes';
+    const active=ctaSchedule[cta]!==false;
+    const card=document.getElementById('cta-'+key);
+    const cntEl=document.getElementById('cnt-'+key);
+    if(card){
+      card.style.opacity=active?'1':'0.35';
+      card.style.pointerEvents=(active||isAdmin())?'auto':'none';
+      if(!active)card.classList.remove('selected');
+    }
+    if(cntEl){
+      if(!active){
+        cntEl.innerHTML='<span style="color:var(--red2);font-size:10px;font-family:var(--display);letter-spacing:1px">CANCELADA</span>'+(isAdmin()?` <button onclick="toggleCTA('${cta}',true)" style="font-size:9px;background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.3);color:var(--green2);border-radius:3px;padding:1px 5px;cursor:pointer;margin-left:4px">Reativar</button>`:'');
+      } else {
+        const cnt=attData[cta]?attData[cta].present.length:0;
+        cntEl.innerHTML=cnt+' presentes'+(isAdmin()?` <button onclick="toggleCTA('${cta}',false)" style="font-size:9px;background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.3);color:var(--red2);border-radius:3px;padding:1px 5px;cursor:pointer;margin-left:4px">Cancelar</button>`:'');
+      }
+    }
   });
+  if(selectedCTA&&ctaSchedule[selectedCTA]===false&&!isAdmin()){
+    selectedCTA=null;document.getElementById('att-section').style.display='none';
+  }
   if(selectedCTA)renderPlayerList();
+}
+async function toggleCTA(cta,active){
+  const date=document.getElementById('att-date').value;
+  if(!date)return;
+  if(!confirm(active?`Reativar CTA ${cta} em ${date}?`:`Cancelar CTA ${cta} em ${date}?
+
+Players NÃO tomarão falta por esta CTA.`))return;
+  try{
+    await api('POST','/api/cta-schedule',{date,cta,active});
+    loadAttendanceCounts();
+  }catch(e){alert('Erro: '+e.message);}
 }
 function onDateChange(){loadAttendanceCounts();}
 function selectCTA(cta){
+  if(ctaSchedule[cta]===false&&!isAdmin()){return;} // CTA cancelada
   selectedCTA=cta;
   document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('cta-'+cta.replace(':','').replace(' UTC','')).classList.add('selected');
