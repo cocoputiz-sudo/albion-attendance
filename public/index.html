@@ -1398,13 +1398,12 @@ async function loadAttendanceCounts(){
 }
 async function toggleCTA(cta,active){
   const date=document.getElementById('att-date').value;
-  if(!date)return;
-  if(!confirm(active?`Reativar CTA ${cta} em ${date}?`:`Cancelar CTA ${cta} em ${date}?
-
-Players NÃO tomarão falta por esta CTA.`))return;
+  if(!date){alert('Selecione uma data primeiro.');return;}
+  const msg=active?('Reativar CTA '+cta+' em '+date+'?'):('Cancelar CTA '+cta+' em '+date+'?\n\nPlayers NAO tomarao falta por esta CTA.');
+  if(!window.confirm(msg))return;
   try{
-    await api('POST','/api/cta-schedule',{date,cta,active});
-    loadAttendanceCounts();
+    await api('POST','/api/cta-schedule',{date:date,cta:cta,active:active===true});
+    await loadAttendanceCounts();
   }catch(e){alert('Erro: '+e.message);}
 }
 function onDateChange(){loadAttendanceCounts();}
