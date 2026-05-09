@@ -1409,13 +1409,15 @@ async function toggleCTA(cta,active){
 function onDateChange(){loadAttendanceCounts();}
 function selectCTA(cta){
   if(ctaSchedule[cta]===false&&!isAdmin()){return;} // CTA cancelada
-  // Show correct cancel/reativar button
+  // Show correct cancel/reativar button — only admin/officer
   const cancelBtn=document.getElementById('cta-cancel-btn');
   const reativarBtn=document.getElementById('cta-reativar-btn');
+  if(cancelBtn)cancelBtn.style.display='none';
+  if(reativarBtn)reativarBtn.style.display='none';
   if(isAdmin()){
     const isCancelled=ctaSchedule[cta]===false;
-    if(cancelBtn)cancelBtn.style.display=isCancelled?'none':'';
-    if(reativarBtn)reativarBtn.style.display=isCancelled?'':'none';
+    if(cancelBtn)cancelBtn.style.display=isCancelled?'none':'inline-flex';
+    if(reativarBtn)reativarBtn.style.display=isCancelled?'inline-flex':'none';
   }
   selectedCTA=cta;
   document.querySelectorAll('.cta-card').forEach(c=>c.classList.remove('selected'));
