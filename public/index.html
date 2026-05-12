@@ -319,8 +319,8 @@ tr:first-child td{border-top:none}
 /* ── HIGHLIGHTS SHORTS ── */
 .hl-overlay{position:fixed;inset:0;background:#000;z-index:1000;display:none;flex-direction:column;align-items:center;justify-content:center}
 .hl-overlay.open{display:flex;animation:fadeIn .3s}
-.hl-container{position:relative;width:100%;max-width:560px;height:100vh;max-height:850px;background:#000;overflow:hidden;border-radius:0}
-@media(min-width:600px){.hl-container{border-radius:16px;height:calc(100vh - 40px)}}
+.hl-container{position:relative;width:100%;max-width:400px;height:100%;max-height:711px;background:#000;overflow:hidden;border-radius:16px;aspect-ratio:9/16}
+.hl-overlay{align-items:center;justify-content:center;padding:20px 0}
 .hl-video-wrap{width:100%;height:100%;position:relative;background:#000}
 .hl-video-wrap video{width:100%;height:100%;object-fit:contain}
 .hl-video-wrap iframe{width:100%;height:100%;border:none}
@@ -861,7 +861,7 @@ tr:first-child td{border-top:none}
     <div style="font-family:var(--display);font-size:13px;color:var(--gold2);letter-spacing:2px;text-transform:uppercase">Tracker Bomb · Imortais</div>
   </div>
   <div style="font-size:11px;color:var(--text2);line-height:1.8;font-family:var(--mono)">
-    <div>v1.0.0 · Release <span style="color:var(--gold)">06 Maio 2026</span></div>
+    <div>v2.8.0 · Release <span style="color:var(--gold)">09 Maio 2026</span></div>
     <div>Idealizado por <span style="color:var(--text)">BadMack</span> · Desenvolvido com <span style="color:var(--red2)">♥</span> por <span style="color:var(--text)">Igor Perini</span> &amp; <span style="color:var(--gold)">Claude (Anthropic)</span></div>
   </div>
 </footer>
@@ -1455,8 +1455,17 @@ function renderPlayerList(){
 function tgl(name,present){
   const row=document.getElementById('pr-'+name);const btns=row.querySelectorAll('.bp');
   const isSelf=name===session.nick&&!isAdmin();
-  row.className=`player-row ${present?'present':'absent'}${isSelf?' self-row':''}`;
-  btns[0].className='bp'+(present?' on':'');btns[1].className='bp ba'+(present?'':' on');
+  // If clicking same state again = clear (deselect)
+  const wasPresent=row.classList.contains('present');
+  const wasAbsent=row.classList.contains('absent');
+  if((present&&wasPresent)||(!present&&wasAbsent)){
+    // Toggle off — remove status
+    row.className=`player-row${isSelf?' self-row':''}`;
+    btns[0].className='bp';btns[1].className='bp ba';
+  } else {
+    row.className=`player-row ${present?'present':'absent'}${isSelf?' self-row':''}`;
+    btns[0].className='bp'+(present?' on':'');btns[1].className='bp ba'+(present?'':' on');
+  }
 }
 function markAll(present){
   if(!isAdmin())return;
@@ -1595,29 +1604,94 @@ async function delRegear(id){try{await api('DELETE',`/api/regear/${id}`);loadReg
 async function loadShopping(){
   const from=document.getElementById('shop-from').value,to=document.getElementById('shop-to').value;
   try{
-    const data=await api('GET',`/api/shopping?from=${from}&to=${to}`);
-    if(!Object.keys(data).length){
-      document.getElementById('shopping-content').innerHTML='<p style="color:var(--text2);font-size:13px">Nenhuma compra pendente no período.</p>';
-      return;
-    }
+    // Get consolidated list AND per-player breakdown
+    const [data, allRg] = await Promise.all([
+      api('GET',`/api/shopping?from=${from}&to=${to}`),
+      api('GET','/api/regear')
+    ]);
+
+    // Filter approved unpaid in range
+    const approvedUnpaid = allRg.filter(r=>{
+      const d=(r.date||'').split('T')[0];
+      return r.status==='approved'&&!r.paid&&(!from||d>=from)&&(!to||d<=to);
+    });
+
+    // Group by player
+    const byPlayer={};
+    approvedUnpaid.forEach(r=>{
+      if(!byPlayer[r.player])byPlayer[r.player]=[];
+      byPlayer[r.player].push(r);
+    });
+
     let html='';
-    Object.entries(data).forEach(([build,items])=>{
-      const total=Object.values(items).reduce((s,v)=>s+v,0);
-      if(total===0)return;
-      html+=`<div class="shop-build">
-        <div class="shop-build-title">${build}</div>
-        <div class="shop-items">`;
-      Object.entries(items).forEach(([item,qty])=>{
-        if(qty===0)return;
-        html+=`<div class="shop-item">
-          <span class="shop-item-name">${item}</span>
-          <span class="shop-item-qty">×${qty}</span>
+
+    // --- PER PLAYER SECTION ---
+    if(Object.keys(byPlayer).length){
+      html+='<div class="sec"><div class="sec-title">Por Player</div>';
+      Object.entries(byPlayer).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([nick,rows])=>{
+        const ACLR=['#c9a227','#8e44ad','#2471a3','#c0392b','#27ae60','#d35400'];
+        const bg=ACLR[nick.charCodeAt(0)%ACLR.length];
+        html+=`<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,${bg}88,${bg});display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:13px;font-weight:700;color:var(--bg)">${nick[0]}</div>
+            <div style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--gold2)">${nick}</div>
+            <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">${rows.length} pedido(s)</div>
+            <button onclick="markAllPaidForPlayer('${nick}','${from}','${to}')" style="margin-left:auto;padding:4px 10px;font-size:10px;background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.3);color:var(--green2);border-radius:5px;cursor:pointer;font-family:var(--mono)">✓ Marcar tudo pago</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${rows.map(r=>{
+              let info='';
+              if(r.death_role)info=`☠ Morte · ${r.death_genre?r.death_genre+' · ':''}${r.death_role} (set completo)`;
+              if(r.overcharge&&r.overcharge_build){
+                const p=Array.isArray(r.overcharge_parts)?r.overcharge_parts:JSON.parse(r.overcharge_parts||'[]');
+                info=`⚡ OC · ${r.overcharge_genre?r.overcharge_genre+' · ':''}${r.overcharge_build}${p.length?' · '+p.join(', '):''}`;
+              }
+              return`<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--bg2);border-radius:6px;border:1px solid var(--border)">
+                ${r.screenshot?`<img src="${r.screenshot}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;flex-shrink:0">`:'' }
+                <div style="flex:1">
+                  <div style="font-size:12px;font-family:var(--mono);color:var(--text)">${info||'—'}</div>
+                  <div style="font-size:10px;color:var(--text2)">${(r.date||'').split('T')[0]} · ${r.cta}</div>
+                </div>
+                <button onclick="togglePaid(${r.id},false);setTimeout(loadShopping,500)" style="padding:3px 8px;font-size:10px;background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.3);color:var(--green2);border-radius:4px;cursor:pointer;font-family:var(--mono)">✓ Pago</button>
+              </div>`;
+            }).join('')}
+          </div>
         </div>`;
       });
-      html+=`</div></div>`;
+      html+='</div>';
+    }
+
+    // --- CONSOLIDATED LIST ---
+    if(Object.keys(data).length){
+      html+='<div class="sec"><div class="sec-title">Lista Consolidada de Compras</div>';
+      Object.entries(data).forEach(([build,items])=>{
+        const total=Object.values(items).reduce((s,v)=>s+v,0);
+        if(total===0)return;
+        html+=`<div class="shop-build"><div class="shop-build-title">${build}</div><div class="shop-items">`;
+        Object.entries(items).forEach(([item,qty])=>{
+          if(qty===0)return;
+          html+=`<div class="shop-item"><span class="shop-item-name">${item}</span><span class="shop-item-qty">×${qty}</span></div>`;
+        });
+        html+=`</div></div>`;
+      });
+      html+='</div>';
+    }
+
+    document.getElementById('shopping-content').innerHTML=html||'<p style="color:var(--text2);font-size:13px;font-family:var(--mono)">Nenhuma compra pendente.</p>';
+  }catch(e){document.getElementById('shopping-content').innerHTML='<p style="color:var(--red2);font-size:13px">Erro: '+e.message+'</p>';}
+}
+
+async function markAllPaidForPlayer(nick,from,to){
+  if(!confirm('Marcar todos os re-gears aprovados de '+nick+' como pagos?'))return;
+  try{
+    const allRg=await api('GET','/api/regear');
+    const toPay=allRg.filter(r=>{
+      const d=(r.date||'').split('T')[0];
+      return r.player===nick&&r.status==='approved'&&!r.paid&&(!from||d>=from)&&(!to||d<=to);
     });
-    document.getElementById('shopping-content').innerHTML=html||'<p style="color:var(--text2);font-size:13px">Nenhuma compra pendente.</p>';
-  }catch(e){document.getElementById('shopping-content').innerHTML='<p style="color:var(--red);font-size:13px">Erro ao carregar.</p>';}
+    await Promise.all(toPay.map(r=>api('PATCH','/api/regear/'+r.id+'/paid',{paid:true})));
+    loadShopping();
+  }catch(e){alert('Erro: '+e.message);}
 }
 
 // ── MEMBROS ───────────────────────────────────────────────────────────────────
@@ -2469,17 +2543,11 @@ function getYtShortId(url) {
 
 async function checkAndShowHighlights() {
   if (!session) return;
-  const nick = session.nick || session.officerNick || 'ADMIN';
   try {
     const items = await api('GET', '/api/highlights');
     if (!items || !items.length) return;
-    // Show all unseen highlights regardless of role
-    const unseen = items.filter(h => {
-      const seen = Array.isArray(h.seen_by) ? h.seen_by : JSON.parse(h.seen_by || '[]');
-      return !seen.includes(nick);
-    });
-    if (!unseen.length) return;
-    hlData = unseen;
+    // Mostrar todos os highlights sempre — pessoa pode rever quantas vezes quiser
+    hlData = items;
     hlIndex = 0;
     openHighlights();
   } catch(e) { console.warn('Highlights:', e); }
