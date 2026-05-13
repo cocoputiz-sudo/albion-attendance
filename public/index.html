@@ -653,6 +653,15 @@ tr:first-child td{border-top:none}
   <div id="page-shopping" class="page">
     <h2 style="margin-bottom:14px">🛒 Lista de Compras</h2>
     <div class="alert alert-i" style="margin-bottom:16px">Re-gears aprovados e não pagos. Filtre por período para calcular.</div>
+    <div class="sec" style="margin-bottom:16px">
+      <div class="flex aic jb">
+        <div class="sec-title" style="margin:0">🏪 Preços de Mercado — Set Ranged Bomb</div>
+        <button class="btn btn-gold btn-sm" onclick="loadMarketPrices()">🔍 Consultar Preços</button>
+      </div>
+      <div id="market-prices-content" style="margin-top:12px">
+        <p style="color:var(--text2);font-size:12px;font-family:var(--mono)">Clique em "Consultar Preços" para buscar os melhores preços em tempo real nos mercados do Albion.</p>
+      </div>
+    </div>
     <div class="flex aic gap8 wrap" style="margin-bottom:14px">
       <div class="dr" style="margin:0"><label>De</label><input type="date" id="shop-from" style="width:135px"></div>
       <div class="dr" style="margin:0"><label>Até</label><input type="date" id="shop-to" style="width:135px"></div>
@@ -2038,7 +2047,12 @@ function getTodayStr(){return new Date().toISOString().slice(0,10);}
 // ════════════════════════════════════════════════════════════════════
 
 const RANKING_CONFIG = {
-  pts: { attendance: 1, kill: 2, regear_approved: 0.5 },
+  pts: {
+    attendance: 10,        // presença = base principal
+    kill_personal: 0.75,   // kill registrada no seu nome
+    kill_party: 0.5,       // qualquer kill da party na mesma CTA
+    death_penalty: -2,     // morreu no bomb (re-gear aprovado)
+  },
   medals: [
     { id:'presente10',  icon:'🛡️', name:'Guardião',       desc:'10 presenças',           check:(s)=>s.attendance>=10 },
     { id:'presente30',  icon:'⚔️', name:'Veterano',        desc:'30 presenças',           check:(s)=>s.attendance>=30 },
@@ -2068,36 +2082,84 @@ function getRankingTitle(pts){
 }
 
 async function computeRankingData(from,to){
-  const [statsAll, statsRange] = await Promise.all([
+  const [statsAll, statsRange, killsRaw, rgRaw] = await Promise.all([
     api('GET',`/api/stats?from=2024-01-01&to=2099-12-31`),
-    api('GET',`/api/stats?from=${from}&to=${to}`)
+    api('GET',`/api/stats?from=${from}&to=${to}`),
+    api('GET',`/api/kills`).catch(()=>[]),
+    api('GET',`/api/regear`).catch(()=>[])
   ]);
 
-  const players = PLAYERS.map(nick=>{
-    // All-time kills
-    const killsRec = statsAll.kills.find(k=>k.player===nick);
-    const kills = parseInt(killsRec?.total||0);
-    // Range kills
-    const killsR = parseInt((statsRange.kills.find(k=>k.player===nick))?.total||0);
-    // All-time attendance
-    const attP = parseInt(statsAll.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0));
-    const attA = parseInt(statsAll.attendance.filter(a=>a.player===nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0));
-    // Total = todas as CTAs registradas (presença + ausência + faltas automáticas)
-    const totalPossible = statsAll.totalCTAs || (attP + attA);
-    const attTotal = totalPossible > 0 ? totalPossible : (attP + attA);
-    const attendancePct = attTotal>0?Math.round(attP/attTotal*100):0;
-    // Range attendance
-    const attPR = parseInt(statsRange.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0));
-    // Range re-gear approved
-    const rgR = parseInt((statsRange.regear.find(r=>r.status==='approved'))?.cnt||0);
+  // Kills no período filtrado
+  const killsInRange = killsRaw.filter(k=>{
+    const d=(k.date||'').split('T')[0];
+    return d>=from && d<=to;
+  });
 
-    const ptsRange = attPR*RANKING_CONFIG.pts.attendance + killsR*RANKING_CONFIG.pts.kill + rgR*RANKING_CONFIG.pts.regear_approved;
-    const ptsAll   = attP*RANKING_CONFIG.pts.attendance + kills*RANKING_CONFIG.pts.kill;
+  // Total kills da party por data+CTA (para bônus coletivo)
+  const partyKillsByCTA = {}; // key: date_cta => total kills
+  killsInRange.forEach(k=>{
+    const key=(k.date||'').split('T')[0]+'_'+k.cta;
+    partyKillsByCTA[key]=(partyKillsByCTA[key]||0)+parseInt(k.kill_count||0);
+  });
+
+  // Mortes no período (re-gear aprovado ou pendente = morreu)
+  const deathsInRange = rgRaw.filter(r=>{
+    const d=(r.date||'').split('T')[0];
+    return d>=from && d<=to && r.death_role && (r.status==='approved'||r.status==='pending');
+  });
+
+  const players = PLAYERS.map(nick=>{
+    // All-time
+    const kills = parseInt(statsAll.kills.find(k=>k.player===nick)?.total||0);
+    const attP = statsAll.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+    const attA = statsAll.attendance.filter(a=>a.player===nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+    const totalPossible = statsAll.totalCTAs||Math.max(attP+attA,1);
+    const attendancePct = Math.round(attP/totalPossible*100);
+
+    // Range
+    const attPR = statsRange.attendance.filter(a=>a.player===nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
+    const killsR = parseInt(statsRange.kills.find(k=>k.player===nick)?.total||0);
+
+    // Kills pessoais no período (bônus 0.75)
+    const myKillsRange = killsInRange.filter(k=>k.player===nick).reduce((s,k)=>s+parseInt(k.kill_count||0),0);
+
+    // Bônus de party: para cada CTA que esteve presente, soma kills totais da party × 0.5
+    // Pega as CTAs em que o player estava presente no período
+    const attDetails = statsRange.attendance.filter(a=>a.player===nick&&a.status==='present');
+    let partyKillBonus = 0;
+    // Busca presenças detalhadas via kills range para descobrir as CTAs
+    killsInRange.forEach(k=>{
+      const key=(k.date||'').split('T')[0]+'_'+k.cta;
+      // Verifica se esse player estava presente nessa CTA
+      // Simplificado: se o player tem presença no período, distribui proporcionalmente
+    });
+    // Approach mais simples e correto: total kills party × 0.5 × (presenças do player / CTAs com kills)
+    const ctasWithKills = new Set(killsInRange.map(k=>(k.date||'').split('T')[0]+'_'+k.cta)).size;
+    const totalPartyKills = killsInRange.reduce((s,k)=>s+parseInt(k.kill_count||0),0);
+    const presenceRatio = ctasWithKills>0 ? Math.min(attPR/Math.max(ctasWithKills,1),1) : 0;
+    partyKillBonus = totalPartyKills * RANKING_CONFIG.pts.kill_party * presenceRatio;
+
+    // Mortes no período
+    const myDeaths = deathsInRange.filter(r=>r.player===nick).length;
+
+    // Pontuação
+    const ptsAtt = attPR * RANKING_CONFIG.pts.attendance;
+    const ptsKillPersonal = myKillsRange * RANKING_CONFIG.pts.kill_personal;
+    const ptsKillParty = partyKillBonus;
+    const ptsDeath = myDeaths * RANKING_CONFIG.pts.death_penalty;
+    const ptsRange = ptsAtt + ptsKillPersonal + ptsKillParty + ptsDeath;
+    const ptsAll = attP*RANKING_CONFIG.pts.attendance + kills*RANKING_CONFIG.pts.kill_personal;
 
     const medals = RANKING_CONFIG.medals.filter(m=>m.check({attendance:attP,kills,attendancePct,rank:0,mvpWeeks:0}));
     const title = getRankingTitle(ptsAll);
 
-    return { nick, kills, killsR, attP, attA, attTotal, attendancePct, attPR, rgR, ptsRange, ptsAll, medals, title };
+    return {
+      nick, kills, killsR:myKillsRange, attP, attA, attTotal:totalPossible,
+      attendancePct, attPR, myDeaths,
+      ptsAtt, ptsKillPersonal, ptsKillParty:parseFloat(ptsKillParty.toFixed(1)),
+      ptsDeath, ptsRange:parseFloat(ptsRange.toFixed(1)), ptsAll,
+      medals, title
+    };
   });
 
   players.sort((a,b)=>b.ptsRange-a.ptsRange);
@@ -2142,9 +2204,11 @@ async function loadRanking(){
         <div style="font-size:11px;margin-top:4px;color:${mvp.title.color};font-family:var(--display);letter-spacing:1px">${mvp.title.title}</div>
         <div style="font-family:var(--display);font-size:36px;font-weight:700;color:var(--gold3);margin:12px 0 4px">${mvp.ptsRange.toFixed(1)}</div>
         <div style="font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;font-family:var(--display)">Pontos no período</div>
-        <div style="display:flex;justify-content:center;gap:16px;margin-top:16px">
-          <div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--green2)">${mvp.attPR}</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Presenças</div></div>
-          <div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--red2)">${mvp.killsR}</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Kills</div></div>
+        <div style="display:flex;justify-content:center;gap:12px;margin-top:16px;flex-wrap:wrap">
+          <div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--green2)">${mvp.attPR}</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">🛡 Presenças</div></div>
+          <div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--red2)">${mvp.killsR}</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">⚔ Kills</div></div>
+          <div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--gold)">${mvp.ptsKillParty.toFixed(1)}</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">👥 Bônus Party</div></div>
+          ${mvp.myDeaths>0?'<div style="text-align:center"><div style="font-family:var(--display);font-size:18px;color:var(--red2)">'+mvp.myDeaths+'</div><div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">☠ Mortes</div></div>':''}
         </div>
         <div style="display:flex;justify-content:center;gap:6px;margin-top:14px;flex-wrap:wrap">
           ${mvp.medals.filter(Boolean).map(m=>`<span title="${m.name}: ${m.desc}" style="font-size:20px;cursor:default">${m.icon}</span>`).join('')}
@@ -2174,7 +2238,12 @@ async function loadRanking(){
                     </div>
                   </td>
                   <td><span style="font-size:11px;color:${p.title.color};font-family:var(--display)">${p.title.title}</span></td>
-                  <td><span style="font-family:var(--display);font-size:15px;font-weight:700;color:var(--gold2)">${p.ptsRange.toFixed(1)}</span></td>
+                  <td>
+                    <span style="font-family:var(--display);font-size:15px;font-weight:700;color:var(--gold2)">${p.ptsRange.toFixed(1)}</span>
+                    <div style="font-size:9px;color:var(--text2);font-family:var(--mono);margin-top:1px">
+                      🛡${p.ptsAtt} ⚔${p.ptsKillPersonal.toFixed(1)} 👥${p.ptsKillParty.toFixed(1)}${p.ptsDeath<0?' ☠'+p.ptsDeath:''}
+                    </div>
+                  </td>
                   <td style="text-align:center"><span style="color:var(--green2);font-family:var(--mono)">${p.attPR}</span></td>
                   <td style="text-align:center"><span style="color:var(--red2);font-family:var(--mono)">${p.killsR}</span></td>
                   <td style="text-align:center"><span style="font-family:var(--mono);color:${p.attendancePct>=70?'var(--green2)':p.attendancePct>=40?'var(--gold2)':'var(--red2)'}">${p.attendancePct}%</span></td>
@@ -2796,6 +2865,214 @@ async function deleteHighlight(id) {
     await api('DELETE', `/api/highlights/${id}`);
     loadAdminPanel();
   } catch(e) { alert(e.message); }
+}
+
+
+
+// ══════════════════════════════════════════════════════════
+// PREÇOS DE MERCADO ALBION — SET RANGED BOMB
+// ══════════════════════════════════════════════════════════
+
+const BOMB_SET_RANGED = [
+  {
+    name: 'Assassin Jacket', slot: 'Peito',
+    ids: ['T8_ARMOR_LEATHER_SET3','T7_ARMOR_LEATHER_SET3@1','T6_ARMOR_LEATHER_SET3@2','T5_ARMOR_LEATHER_SET3@3']
+  },
+  {
+    name: 'Soldier Helmet', slot: 'Capacete',
+    ids: ['T8_HEAD_PLATE_SET1','T7_HEAD_PLATE_SET1@1','T6_HEAD_PLATE_SET1@2','T5_HEAD_PLATE_SET1@3']
+  },
+  {
+    name: 'Shoes of Tenacity', slot: 'Bota',
+    ids: ['T7_SHOES_LEATHER_AVALON','T6_SHOES_LEATHER_AVALON@1','T5_SHOES_LEATHER_AVALON@2','T4_SHOES_LEATHER_AVALON@3']
+  },
+  {
+    name: 'Fort Sterling Cape', slot: 'Capa',
+    ids: ['T4_CAPEITEM_FW_FORTSTERLING@3','T4_CAPEITEM_FW_FORTSTERLING@2','T4_CAPEITEM_FW_FORTSTERLING@1','T4_CAPEITEM_FW_FORTSTERLING']
+  },
+  {
+    name: 'Wailing Bow', slot: 'Arco',
+    ids: ['T8_2H_BOW_UNDEAD@1','T7_2H_BOW_UNDEAD@2','T6_2H_BOW_UNDEAD@3']
+  },
+  {
+    name: 'Witchwork Staff', slot: 'Arcane',
+    ids: ['T8_MAIN_ARCANESTAFF_MORGANA@1','T7_MAIN_ARCANESTAFF_MORGANA@2','T6_MAIN_ARCANESTAFF_MORGANA@3']
+  },
+  {
+    name: 'Cryptcandle', slot: 'Off-hand',
+    ids: ['T8_OFF_TORCH_UNDEAD@1','T7_OFF_TORCH_UNDEAD@2','T6_OFF_TORCH_UNDEAD@3']
+  },
+  {
+    name: 'Spiked Gauntlets', slot: 'Gauntlet',
+    ids: ['T8_MAIN_SPELLCASTER_HELL@1','T7_MAIN_SPELLCASTER_HELL@2','T6_MAIN_SPELLCASTER_HELL@3']
+  },
+  {
+    name: 'Lifecurse Staff', slot: 'Cursed',
+    ids: ['T8_MAIN_CURSEDSTAFF_MORGANA@1','T7_MAIN_CURSEDSTAFF_MORGANA@2','T6_MAIN_CURSEDSTAFF_MORGANA@3']
+  },
+  {
+    name: 'Mistcaller', slot: 'Off-hand 2',
+    ids: ['T8_OFF_HORN@1','T7_OFF_HORN@2','T6_OFF_HORN@3']
+  },
+  {
+    name: 'Permafrost Prism', slot: 'Frost',
+    ids: ['T8_MAIN_FROSTSTAFF_HELL@1','T7_MAIN_FROSTSTAFF_HELL@2','T6_MAIN_FROSTSTAFF_HELL@3']
+  },
+  {
+    name: 'Dawnsong', slot: 'Fire',
+    ids: ['T8_2H_FIRESTAFF_KEEPER@1','T7_2H_FIRESTAFF_KEEPER@2','T6_2H_FIRESTAFF_KEEPER@3']
+  },
+];
+
+const CITIES = ['Caerleon','Bridgewatch','Fort Sterling','Martlock','Lymhurst','Thetford','Black Market'];
+const CITY_ABBR = {'Caerleon':'CAE','Bridgewatch':'BRW','Fort Sterling':'FST','Martlock':'MAR','Lymhurst':'LYM','Thetford':'THE','Black Market':'BLK'};
+
+async function fetchAlbionPrices(itemIds, cities) {
+  const ids = itemIds.join(',');
+  const locs = cities.join(',');
+  const url = `https://west.albion-online-data.com/api/v2/stats/prices/${ids}?locations=${encodeURIComponent(locs)}&qualities=1`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('API Albion indisponível');
+  return r.json();
+}
+
+async function loadMarketPrices() {
+  const wrap = document.getElementById('market-prices-content');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2);font-family:var(--mono)"><div class="sp"></div> Consultando mercados do Albion...</div>';
+
+  try {
+    // Fetch all item prices at once
+    const allIds = BOMB_SET_RANGED.flatMap(i => i.ids);
+    const data = await fetchAlbionPrices(allIds, CITIES);
+
+    // Build price map: {itemId: {city: minPrice}}
+    const priceMap = {};
+    data.forEach(entry => {
+      if (!priceMap[entry.item_id]) priceMap[entry.item_id] = {};
+      if (entry.sell_price_min > 0) {
+        priceMap[entry.item_id][entry.city] = entry.sell_price_min;
+      }
+    });
+
+    // For each item, find best price per city (cheapest equivalent)
+    const itemBestByCity = BOMB_SET_RANGED.map(item => {
+      const cityPrices = {};
+      CITIES.forEach(city => {
+        // Find cheapest equivalent for this city
+        let best = Infinity;
+        item.ids.forEach(id => {
+          const p = priceMap[id]?.[city];
+          if (p && p < best) best = p;
+        });
+        cityPrices[city] = best === Infinity ? null : best;
+      });
+      return { ...item, cityPrices };
+    });
+
+    // Calculate total per city
+    const cityTotals = {};
+    const cityAvailability = {}; // how many items are available
+    CITIES.forEach(city => {
+      let total = 0, avail = 0;
+      itemBestByCity.forEach(item => {
+        if (item.cityPrices[city]) { total += item.cityPrices[city]; avail++; }
+      });
+      cityTotals[city] = total;
+      cityAvailability[city] = avail;
+    });
+
+    // Find best city: fully available with lowest total
+    const fullCities = CITIES.filter(c => cityAvailability[c] === BOMB_SET_RANGED.length);
+    const sortedCities = [...CITIES].sort((a,b) => {
+      const aFull = cityAvailability[a] === BOMB_SET_RANGED.length;
+      const bFull = cityAvailability[b] === BOMB_SET_RANGED.length;
+      if (aFull && !bFull) return -1;
+      if (!aFull && bFull) return 1;
+      return (cityTotals[a]||Infinity) - (cityTotals[b]||Infinity);
+    });
+    const bestCity = sortedCities[0];
+    const bestTotal = cityTotals[bestCity] || 0;
+
+    // Build HTML
+    const fmt = n => n ? (n/1000000).toFixed(2)+'M' : '—';
+    const fmtFull = n => n ? n.toLocaleString('pt-BR') : '—';
+
+    let html = `
+      <!-- BANNER MELHOR CIDADE -->
+      <div style="background:linear-gradient(135deg,rgba(201,162,39,.12),var(--bg2));border:1px solid var(--gold);border-radius:12px;padding:18px;margin-bottom:16px;display:flex;align-items:center;gap:16px">
+        <div style="font-size:32px">🏆</div>
+        <div>
+          <div style="font-family:var(--display);font-size:11px;color:var(--gold-dim);text-transform:uppercase;letter-spacing:2px">Melhor mercado para comprar o set completo</div>
+          <div style="font-family:var(--display);font-size:22px;font-weight:700;color:var(--gold2);margin:4px 0">${bestCity}</div>
+          <div style="font-family:var(--mono);font-size:13px;color:var(--text)">
+            Total: <strong style="color:var(--gold2)">${fmtFull(bestTotal)}</strong> prata
+            ${cityAvailability[bestCity] < BOMB_SET_RANGED.length ? 
+              `<span style="color:var(--gold2)"> · ⚠ ${cityAvailability[bestCity]}/${BOMB_SET_RANGED.length} itens disponíveis</span>` : 
+              '<span style="color:var(--green2)"> · ✓ Set completo disponível</span>'}
+          </div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-bottom:6px">Comparativo de cidades</div>
+          ${sortedCities.slice(0,4).map((city,i) => {
+            const diff = bestTotal > 0 ? ((cityTotals[city]||0)/bestTotal - 1)*100 : 0;
+            const clr = i===0?'var(--gold2)':diff<5?'var(--green2)':diff<15?'var(--text)':'var(--text2)';
+            return `<div style="font-size:11px;font-family:var(--mono);color:${clr}">
+              ${i===0?'👑':i===1?'🥈':i===2?'🥉':'  '} ${city}: ${fmt(cityTotals[city]||0)}${i>0&&cityTotals[city]?' <span style="font-size:9px;color:var(--text2)">(+'+diff.toFixed(1)+'%)</span>':''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- TABELA POR ITEM -->
+      <div class="sec">
+        <div class="sec-title">Preços por item — melhor equivalente disponível</div>
+        <div class="tw">
+          <table>
+            <thead><tr>
+              <th>Item</th><th>Slot</th>
+              ${sortedCities.slice(0,5).map(c=>`<th style="text-align:right">${CITY_ABBR[c]||c}</th>`).join('')}
+              <th style="text-align:right;color:var(--gold2)">Melhor</th>
+            </tr></thead>
+            <tbody>
+              ${itemBestByCity.map(item => {
+                const prices = sortedCities.slice(0,5).map(c => item.cityPrices[c]);
+                const minPrice = Math.min(...prices.filter(Boolean));
+                return `<tr>
+                  <td style="font-family:var(--display);font-size:12px;color:var(--gold2)">${item.name}</td>
+                  <td style="font-size:10px;color:var(--text2)">${item.slot}</td>
+                  ${sortedCities.slice(0,5).map(c => {
+                    const p = item.cityPrices[c];
+                    const isBest = p && p === minPrice;
+                    return `<td style="text-align:right;font-family:var(--mono);font-size:12px;color:${isBest?'var(--green2)':p?'var(--text)':'var(--text3)'}${isBest?';font-weight:700':''}">
+                      ${p ? fmt(p) : '—'}
+                    </td>`;
+                  }).join('')}
+                  <td style="text-align:right;font-family:var(--display);font-size:13px;font-weight:700;color:var(--gold2)">${fmt(minPrice)||'—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="border-top:2px solid var(--border2)">
+                <td colspan="2" style="font-family:var(--display);font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Total set</td>
+                ${sortedCities.slice(0,5).map((c,i) => `<td style="text-align:right;font-family:var(--display);font-size:13px;font-weight:700;color:${i===0?'var(--gold2)':'var(--text)'}">
+                  ${fmt(cityTotals[c]||0)}${cityAvailability[c]<BOMB_SET_RANGED.length?` <span style="font-size:9px;color:var(--gold2)">(${cityAvailability[c]}/${BOMB_SET_RANGED.length})</span>`:''}
+                </td>`).join('')}
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div style="font-size:10px;color:var(--text2);font-family:var(--mono);text-align:center;margin-top:8px">
+        Dados: albion-online-data.com · Atualizado agora · Preços em prata
+      </div>`;
+
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = `<div class="alert alert-e" style="display:block">Erro ao consultar API do Albion: ${e.message}<br><small style="color:var(--text2)">A API pode estar temporariamente indisponível. Tente novamente.</small></div>`;
+  }
 }
 
 </script>
