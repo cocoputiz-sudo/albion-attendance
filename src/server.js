@@ -452,17 +452,19 @@ app.get('/api/stats', async (req, res) => {
       return { w, p };
     };
     const a = bw('a'), k = bw('k'), r = bw('r');
-    const [attQ, killsQ, rgQ, ctasQ, rgByPlayerQ, killsByPlayerQ] = await Promise.all([
+    const [attQ, killsQ, rgQ, ctasQ, rgByPlayerQ, killsByPlayerQ, deathsByPlayerQ] = await Promise.all([
       pool.query(`SELECT player, status, COUNT(*)::int as cnt FROM attendance a ${a.w} GROUP BY player, status`, a.p),
       pool.query(`SELECT player, SUM(kill_count)::int as total FROM kills k ${k.w} GROUP BY player`, k.p),
       pool.query(`SELECT status, COUNT(*)::int as cnt FROM regear r ${r.w} GROUP BY status`, r.p),
       pool.query(`SELECT COUNT(DISTINCT (date::text || cta))::int as total FROM attendance a ${a.w}`, a.p),
       pool.query(`SELECT player, COUNT(*)::int as cnt FROM regear r ${r.w} GROUP BY player`, r.p),
       pool.query(`SELECT player, SUM(kill_count)::int as total FROM kills k ${k.w} GROUP BY player ORDER BY total DESC`, k.p),
+      pool.query(`SELECT player, COUNT(*)::int as cnt FROM regear r ${r.w} AND r.death_role IS NOT NULL AND r.status = 'approved' GROUP BY player`, r.p),
     ]);
     res.json({
       attendance: attQ.rows, kills: killsQ.rows, killsByPlayer: killsByPlayerQ.rows,
-      regear: rgQ.rows, regearByPlayer: rgByPlayerQ.rows, totalCTAs: ctasQ.rows[0]?.total || 0
+      regear: rgQ.rows, regearByPlayer: rgByPlayerQ.rows, totalCTAs: ctasQ.rows[0]?.total || 0,
+      deathsByPlayer: deathsByPlayerQ.rows,
     });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao buscar stats.' }); }
 });

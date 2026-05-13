@@ -459,6 +459,7 @@ tr:first-child td{border-top:none}
       <div class="stat-card"><div class="stat-icon">💀</div><div class="stat-num" id="d-kills">—</div><div class="stat-label">Kills Totais</div></div>
       <div class="stat-card"><div class="stat-icon">🛡️</div><div class="stat-num" id="d-present">—</div><div class="stat-label">Presenças</div></div>
       <div class="stat-card"><div class="stat-icon">⚒️</div><div class="stat-num" id="d-regear">—</div><div class="stat-label">Re-gears Pendentes</div></div>
+      <div class="stat-card" style="border-color:rgba(192,57,43,.3)"><div class="stat-icon">☠️</div><div class="stat-num" id="d-deaths" style="color:var(--red2)">—</div><div class="stat-label">Mortes no Bomb</div></div>
     </div>
     <div class="dash-section-title">Top Kills do Guild</div>
     <div class="rank-grid" id="dash-ranking"></div>
@@ -1943,6 +1944,7 @@ async function loadDashboard(){
     const totalKills=d.kills.reduce((s,k)=>s+parseInt(k.total||0),0);
     const totalPresent=d.attendance.filter(a=>a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
     const rgPending=parseInt(d.regear.find(r=>r.status==='pending')?.cnt||0);
+    const totalDeaths=(d.deathsByPlayer||[]).reduce((s,r)=>s+parseInt(r.cnt||0),0);
     const sub=document.getElementById('dash-sub');
     if(sub){
       if(!isAdmin()&&session.nick){
@@ -1950,13 +1952,15 @@ async function loadDashboard(){
         const mp=d.attendance.filter(a=>a.player===session.nick&&a.status==='present').reduce((s,a)=>s+parseInt(a.cnt||0),0);
         const ma=d.attendance.filter(a=>a.player===session.nick&&a.status==='absent').reduce((s,a)=>s+parseInt(a.cnt||0),0);
         const pct=mp+ma>0?Math.round(mp/(mp+ma)*100):0;
-        sub.textContent=nick+' · '+mk+' kills · '+mp+' presenças · '+pct+'% attendance';
+        const myDeaths=parseInt((d.deathsByPlayer||[]).find(r=>r.player===session.nick)?.cnt||0);
+        const deathTxt=myDeaths>0?` · ☠ ${myDeaths} morte${myDeaths>1?'s':''}`:'';
+        sub.textContent=nick+' · '+mk+' kills · '+mp+' presenças · '+pct+'% attendance'+deathTxt;
       } else {
         sub.textContent='Guild Imortais · '+PLAYERS.length+' guerreiros · '+d.totalCTAs+' CTAs registradas';
       }
     }
     const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-    set('d-ctas',d.totalCTAs||0);set('d-kills',totalKills);set('d-present',totalPresent);set('d-regear',rgPending);
+    set('d-ctas',d.totalCTAs||0);set('d-kills',totalKills);set('d-present',totalPresent);set('d-regear',rgPending);set('d-deaths',totalDeaths);
     const kbp=(d.killsByPlayer||d.kills).sort((a,b)=>parseInt(b.total||0)-parseInt(a.total||0));
     const kMap={};PLAYERS.forEach(p=>kMap[p]=0);kbp.forEach(k=>{if(kMap[k.player]!==undefined)kMap[k.player]=parseInt(k.total||0);});
     const kSorted=[...PLAYERS].sort((a,b)=>kMap[b]-kMap[a]);
@@ -2323,6 +2327,7 @@ async function loadAdminPanel(){
         <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-num">${attRateAll}%</div><div class="stat-label">Taxa Attend.</div></div>
         <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-num">${rgPendAll}</div><div class="stat-label">RG Pendentes</div></div>
         <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num">${rgAppAll}</div><div class="stat-label">RG Aprovados</div></div>
+        <div class="stat-card" style="border-color:rgba(192,57,43,.3)"><div class="stat-icon">☠️</div><div class="stat-num" style="color:var(--red2)">${(statsAll.deathsByPlayer||[]).reduce((s,r)=>s+parseInt(r.cnt||0),0)}</div><div class="stat-label">Mortes no Bomb</div></div>
       </div>
 
       <!-- COMPARATIVO PERÍODO -->
