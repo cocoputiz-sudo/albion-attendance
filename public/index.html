@@ -1480,7 +1480,13 @@ async function saveAttendance(){
     PLAYERS.forEach(p=>{
       const row=document.getElementById('pr-'+p);if(!row)return;
       const status=row.classList.contains('present')?'present':row.classList.contains('absent')?'absent':null;
-      if(status&&(isAdmin()||p===session.nick))saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));
+      if(!isAdmin()&&p!==session.nick)return;
+      if(status){
+        saves.push(api('POST','/api/attendance',{date,cta:selectedCTA,player:p,status}));
+      } else if(isAdmin()){
+        // Status cleared — delete the record from DB
+        saves.push(api('DELETE','/api/attendance',{date,cta:selectedCTA,player:p}).catch(()=>{}));
+      }
     });
     await Promise.all(saves);
     // Save screenshot if provided

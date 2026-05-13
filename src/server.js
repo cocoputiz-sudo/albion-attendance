@@ -679,6 +679,19 @@ app.post('/api/cta-schedule', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Erro.' }); }
 });
 
+// ── Delete single attendance record ──────────────────────────────────────────
+app.delete('/api/attendance', async (req, res) => {
+  const priv = isPrivileged(req);
+  const nick = (req.headers['x-officer-nick'] || '').toUpperCase();
+  if (!priv) return res.status(403).json({ error: 'Acesso negado.' });
+  const { date, cta, player } = req.body;
+  if (!date || !cta || !player) return res.status(400).json({ error: 'Campos obrigatórios.' });
+  try {
+    await pool.query('DELETE FROM attendance WHERE date=$1 AND cta=$2 AND player=$3', [date, cta, player]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Erro.' }); }
+});
+
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 initDB().then(() => {
